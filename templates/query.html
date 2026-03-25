@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+<title>资产查询</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:微软雅黑;background:#f5f7fa}
+.header{background:#2a5c96;color:white;padding:16px 20px}
+.container{max-width:1200px;margin:auto;padding:20px}
+.card{background:white;border-radius:12px;box-shadow:0 2px 10px #0000000a;padding:24px}
+input,button{width:100%;padding:12px;margin:6px 0;border:1px solid #ddd;border-radius:6px}
+button{background:#2a5c96;color:white;border:none}
+#result{margin-top:20px;padding:16px;background:#f8f9fa;border-radius:6px}
+.nav{display:flex;gap:10px;margin-bottom:20px}
+.nav a{padding:10px 16px;background:white;border-radius:6px;text-decoration:none;color:#333}
+.nav a.active{background:#2a5c96;color:white}
+</style>
+
+<div class="header"><h2>资产查询</h2> <a href="/logout" style="color:white">退出</a></div>
+<div class="container">
+<div class="nav">
+<a href="/">资产列表</a>
+<a href="/record">出入记录</a>
+<a class="active" href="/query">资产查询</a>
+</div>
+
+<div class="card">
+<input id="asset_id" placeholder="输入资产编号">
+<button onclick="search()">查询</button>
+<div id="result"></div>
+</div>
+</div>
+
+<script>
+async function search(){
+    const id = document.getElementById('asset_id').value
+    const res = await fetch('/api/asset',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({asset_id:id})
+    })
+    const data = await res.json()
+    if(!data.ok){document.getElementById('result').innerText="未找到资产";return}
+    const a = data.asset
+    let html = `<h4>${a.name}（${a.asset_id}）</h4>
+    状态：${a.status}<br>总数量：${a.total_quantity}<br>剩余：${a.current_quantity}<br><br>`
+    data.unreturned.forEach(u=>{
+        html += u.time + ' ' + u.person + ' 领用 ' + u.quantity + '个<br>'
+    })
+    document.getElementById('result').innerHTML = html
+}
+</script>

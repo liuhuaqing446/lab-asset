@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+<title>出入记录</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:微软雅黑;background:#f5f7fa}
+.header{background:#2a5c96;color:white;padding:16px 20px}
+.container{max-width:1200px;margin:auto;padding:20px}
+.card{background:white;border-radius:12px;box-shadow:0 2px 10px #0000000a;padding:20px;margin-bottom:20px}
+input,select,button{width:100%;padding:10px;margin:6px 0;border:1px solid #ddd;border-radius:6px}
+button{background:#2a5c96;color:white;border:none}
+table{width:100%;border-collapse:collapse}
+th,td{border:1px solid #eee;padding:10px;text-align:center}
+th{background:#f8f9fa}
+.nav{display:flex;gap:10px;margin-bottom:20px}
+.nav a{padding:10px 16px;background:white;border-radius:6px;text-decoration:none;color:#333}
+.nav a.active{background:#2a5c96;color:white}
+</style>
+
+<div class="header"><h2>出入记录</h2> <a href="/logout" style="color:white">退出</a></div>
+<div class="container">
+<div class="nav">
+<a href="/">资产列表</a>
+<a class="active" href="/record">出入记录</a>
+<a href="/query">资产查询</a>
+</div>
+
+<div class="card">
+<form method="post" action="/do_record">
+<input name="asset_id" placeholder="资产编号" required>
+<input name="person" placeholder="操作人" required>
+<select name="type"><option>领用</option><option>归还</option></select>
+<input name="quantity" type="number" value="1" required>
+<input name="purpose" placeholder="用途">
+<input name="handler" placeholder="经手人" required>
+<button>提交记录</button>
+</form>
+</div>
+
+<div class="card">
+<table>
+<tr><th>时间</th><th>编号</th><th>操作人</th><th>类型</th><th>数量</th><th>用途</th><th>经手人</th></tr>
+{% for r in records %}
+<tr>
+<td>{{r.time}}</td>
+<td>{{r.asset_id}}</td>
+<td>{{r.person}}</td>
+<td>{{r.type}}</td>
+<td>{{r.quantity}}</td>
+<td>{{r.purpose}}</td>
+<td>{{r.handler}}</td>
+</tr>
+{% endfor %}
+</table>
+</div>
+</div>

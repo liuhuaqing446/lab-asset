@@ -1,11 +1,12 @@
 from flask import Flask, render_template, request, flash, redirect, url_for, session, jsonify
 import pymysql
 from datetime import datetime
+import os  # 新增：读取Render环境变量端口
 
 # 完全按张部长给的信息修正，100%正确
 DB_CONFIG = {
     "host": "rm-bp1084h4bg6153o8veo.mysql.rds.aliyuncs.com",
-    "port": 60030,  # 修正端口！
+    "port": 60030,
     "user": "amsaccount",
     "password": "123Qwe$$",
     "db": "amsdb",
@@ -126,7 +127,10 @@ def api_asset():
     cur.execute("SELECT * FROM record_info WHERE asset_id=%s AND type='领用'", (aid,))
     unreturned = cur.fetchall()
     db.close()
-    return jsonify({"ok":True, asset=asset, unreturned=unreturned})
+    # 修复语法错误：全用关键字参数，彻底解决冒号问题
+    return jsonify(ok=True, asset=asset, unreturned=unreturned)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000, debug=False)
+    # 适配Render端口：自动读取环境变量PORT，默认10000
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port, debug=False)

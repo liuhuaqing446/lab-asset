@@ -1,57 +1,107 @@
 <!DOCTYPE html>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width">
-<title>出入记录</title>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0,user-scalable=no">
+<title>{{system_name}}</title>
 <style>
-*{box-sizing:border-box}
-body{margin:0;font-family:微软雅黑;background:#f5f7fa}
-.header{background:#2a5c96;color:white;padding:16px 20px}
-.container{max-width:1200px;margin:auto;padding:20px}
-.card{background:white;border-radius:12px;box-shadow:0 2px 10px #0000000a;padding:20px;margin-bottom:20px}
-input,select,button{width:100%;padding:10px;margin:6px 0;border:1px solid #ddd;border-radius:6px}
-button{background:#2a5c96;color:white;border:none}
-table{width:100%;border-collapse:collapse}
-th,td{border:1px solid #eee;padding:10px;text-align:center}
-th{background:#f8f9fa}
-.nav{display:flex;gap:10px;margin-bottom:20px}
-.nav a{padding:10px 16px;background:white;border-radius:6px;text-decoration:none;color:#333}
-.nav a.active{background:#2a5c96;color:white}
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui, sans-serif;}
+body{background:#f5f7fa;}
+.container{width:100%;max-width:1200px;margin:0 auto;padding:0 12px;}
+.header{background:#2a5c96;color:#fff;padding:16px;text-align:center;font-size:20px;}
+.nav{background:#fff;padding:12px;display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+.nav a{flex:1;min-width:100px;text-align:center;padding:10px 8px;border-radius:8px;text-decoration:none;color:#333;}
+.nav a.active{background:#2a5c96;color:#fff;}
+.form-box,.table-box{background:#fff;padding:16px;border-radius:12px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,0.05);}
+.form-group{margin-bottom:12px;}
+.form-group label{font-size:14px;color:#666;margin-bottom:4px;display:block;}
+.form-group input,.form-group select{width:100%;padding:14px 12px;border:1px solid #eee;border-radius:8px;}
+.btn{width:100%;padding:14px;background:#2a5c96;color:#fff;border:none;border-radius:8px;font-size:16px;min-height:48px;}
+.flash{padding:12px;border-radius:8px;margin-bottom:12px;background:#f8d7da;color:#721c24;}
+.type-in{color:#07c160;font-weight:bold;}
+.type-out{color:#fa4753;font-weight:bold;}
+table{width:100%;border-collapse:collapse;}
+th,td{padding:10px 6px;font-size:14px;border-bottom:1px solid #f5f5f5;}
+.hide-mobile{display:none;}
+.swipe-item{position:relative;display:flex;}
+.swipe-content{width:100%;background:#fff;transition:transform 0.3s;z-index:2;}
+.swipe-delete{position:absolute;right:0;top:0;bottom:0;width:80px;background:#fa4753;color:#fff;border:none;z-index:1;}
+.btn-delete-pc{display:none;background:#fa4753;color:#fff;border:none;padding:6px 12px;border-radius:6px;}
+@media(min-width:768px){
+  .hide-mobile{display:table-cell;}
+  .swipe-delete{display:none;}
+  .btn-delete-pc{display:inline-block;}
+  th,td{padding:15px;}
+}
 </style>
-
-<div class="header"><h2>出入记录</h2> <a href="/logout" style="color:white">退出</a></div>
-<div class="container">
+</head>
+<body>
+<div class="header">{{system_name}}</div>
 <div class="nav">
 <a href="/">资产列表</a>
-<a class="active" href="/record">出入记录</a>
+<a href="/record" class="active">出入记录</a>
 <a href="/query">资产查询</a>
+<a href="/logout">退出登录</a>
 </div>
+<div class="container">
+{% with msg=get_flashed_messages() %}{% if msg %}{% for m in msg %}
+<div class="flash">{{m}}</div>{% endfor %}{% endif %}{% endwith %}
 
-<div class="card">
+<div class="form-box">
 <form method="post" action="/do_record">
-<input name="asset_id" placeholder="资产编号" required>
-<input name="person" placeholder="操作人" required>
-<select name="type"><option>领用</option><option>归还</option></select>
-<input name="quantity" type="number" value="1" required>
-<input name="purpose" placeholder="用途">
-<input name="handler" placeholder="经手人" required>
-<button>提交记录</button>
+<div class="form-group"><label>资产编号 *</label><input name="asset_id" required></div>
+<div class="form-group"><label>操作人 *</label><input name="person" required></div>
+<div class="form-group"><label>类型</label><select name="type"><option>领用</option><option>归还</option></select></div>
+<div class="form-group"><label>数量 *</label><input type="number" name="quantity" value="1" min="1" required></div>
+<div class="form-group hide-mobile"><label>用途</label><input name="purpose"></div>
+<div class="form-group hide-mobile"><label>经手人</label><input name="handler"></div>
+<button class="btn" type="submit">提交</button>
 </form>
 </div>
 
-<div class="card">
+<div class="table-box">
 <table>
-<tr><th>时间</th><th>编号</th><th>操作人</th><th>类型</th><th>数量</th><th>用途</th><th>经手人</th></tr>
+<thead>
+<tr><th>时间</th><th>编号</th><th>操作人</th><th>类型</th><th>数量</th><th class="hide-mobile">用途</th><th class="hide-mobile">经手人</th><th>操作</th></tr>
+</thead>
+<tbody>
 {% for r in records %}
+<tr class="swipe-item">
+<td colspan="8" class="swipe-content">
+<table width="100%">
 <tr>
-<td>{{r.time}}</td>
-<td>{{r.asset_id}}</td>
-<td>{{r.person}}</td>
-<td>{{r.type}}</td>
+<td>{{r.time}}</td><td>{{r.asset_id}}</td><td>{{r.person}}</td>
+<td class="{{'type-out' if r.type=='领用' else 'type-in'}}">{{r.type}}</td>
 <td>{{r.quantity}}</td>
-<td>{{r.purpose}}</td>
-<td>{{r.handler}}</td>
+<td class="hide-mobile">{{r.purpose}}</td>
+<td class="hide-mobile">{{r.handler}}</td>
+<td>
+<form method="post" action="/delete_record" onsubmit="return confirm('删除后库存自动恢复')">
+<input type="hidden" name="record_id" value="{{r.id}}">
+<button class="btn-delete-pc" type="submit">删除</button>
+</form>
+</td>
+</tr>
+</table>
+</td>
+<button class="swipe-delete" onclick="del('{{r.id}}')">删除</button>
 </tr>
 {% endfor %}
+</tbody>
 </table>
 </div>
 </div>
+
+<form id="f" method="post" action="/delete_record" style="display:none"><input name="record_id" id="rid"></form>
+<script>
+function del(id){if(confirm('删除后库存自动恢复')){document.getElementById('rid').value=id;document.getElementById('f').submit();}}
+let sX,mX,sw;
+document.querySelectorAll('.swipe-item').forEach(i=>{
+let c=i.querySelector('.swipe-content');
+i.addEventListener('touchstart',e=>{sX=e.touches[0].clientX;sw=1;});
+i.addEventListener('touchmove',e=>{if(!sw)return;mX=e.touches[0].clientX-sX;if(mX<0&&mX>-80)c.style.transform=`translateX(${mX}px)`;else if(mX<=-80)c.style.transform='translateX(-80px)';});
+i.addEventListener('touchend',()=>{sw=0;if(mX<-40)c.style.transform='translateX(-80px)';else c.style.transform='translateX(0)';});
+});
+</script>
+</body>
+</html>

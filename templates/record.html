@@ -1,213 +1,244 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>{{ system_name }}</title>
-  <style>
-    /* 全局重置+自适应基础 */
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-    body { background: #f5f7fa; }
-    .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 12px; }
-    .header { background: #2a5c96; color: #fff; padding: 16px; text-align: center; font-size: 20px; font-weight: 500; }
-    .nav { background: #fff; margin-bottom: 16px; padding: 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-    .nav a { text-decoration: none; color: #333; border-radius: 8px; padding: 10px 8px; font-size: 14px; flex: 1; min-width: 100px; text-align: center; transition: 0.2s; }
-    .nav a.active { background: #2a5c96; color: #fff; }
-    .nav a.logout { margin-left: auto; min-width: auto; }
-    .form-box, .table-box { background: #fff; padding: 16px; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-    .form-group { margin-bottom: 12px; }
-    .form-group label { display: block; font-size: 14px; color: #666; margin-bottom: 4px; }
-    .form-group input, .form-group select { width: 100%; padding: 14px 12px; font-size: 16px; border: 1px solid #eee; border-radius: 8px; outline: none; }
-    .form-group input:focus, .form-group select:focus { border-color: #2a5c96; }
-    .required { color: #fa4753; }
-    .btn { display: inline-block; border: none; border-radius: 8px; padding: 14px 20px; font-size: 16px; cursor: pointer; min-height: 48px; text-align: center; transition: 0.2s; background: #2a5c96; color: #fff; width: 100%; }
-    .btn:hover { background: #234b7a; }
-    .flash { padding: 12px; border-radius: 8px; margin-bottom: 12px; font-size: 14px; }
-    .flash-error { background: #f8d7da; color: #721c24; }
-    .type-in { color: #07c160; font-weight: 500; }
-    .type-out { color: #fa4753; font-weight: 500; }
-    .table-box h3 { font-size: 18px; font-weight: 500; margin-bottom: 16px; color: #333; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 10px 6px; font-size: 14px; text-align: left; border-bottom: 1px solid #f5f5f5; white-space: normal; word-break: break-word; }
-    th { background: #f8f9fa; font-weight: 500; color: #666; }
-    /* 移动端隐藏次要列 */
-    .hide-mobile { display: none; }
-    /* 左滑删除核心样式 - 仅手机端生效 */
-    .swipe-item { position: relative; display: flex; align-items: center; justify-content: space-between; height: 100%; cursor: pointer; }
-    .swipe-content { width: 100%; position: relative; z-index: 2; background: #fff; transition: transform 0.3s ease; }
-    .swipe-delete { position: absolute; right: 0; top: 0; bottom: 0; z-index: 1; width: 80px; background: #fa4753; color: #fff; border: none; border-radius: 0; cursor: pointer; font-size: 14px; }
-    .btn-delete-pc { display: none; border: none; background: #fa4753; color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; }
-    /* 桌面端适配 (>768px) */
-    @media (min-width: 768px) {
-      .nav { flex-wrap: nowrap; }
-      .nav a { flex: none; padding: 10px 20px; font-size: 16px; }
-      .form-box, .table-box { padding: 30px; }
-      .hide-mobile { display: table-cell; }
-      .swipe-delete { display: none; }
-      .btn-delete-pc { display: inline-block; }
-      th, td { padding: 15px; font-size: 16px; }
-      .form-group { margin-bottom: 15px; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0,user-scalable=no">
+<title>{{system_name}}</title>
+<style>
+/* 全局样式，与index.html完全统一 */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: "Microsoft YaHei", Arial, sans-serif;
+}
+body {
+  background: #f0f0f0;
+}
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+.header {
+  background: #e6f2ff;
+  padding: 20px;
+  text-align: center;
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 10px;
+}
+.nav {
+  background: #f0f0f0;
+  padding: 5px 0;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #ccc;
+}
+.nav a {
+  display: inline-block;
+  padding: 6px 12px;
+  background: #e0e0e0;
+  border: 1px solid #ccc;
+  border-radius: 4px 4px 0 0;
+  text-decoration: none;
+  color: #333;
+  font-size: 14px;
+  margin-right: 2px;
+}
+.nav a.active {
+  background: #fff;
+  border-bottom: 1px solid #fff;
+  font-weight: bold;
+}
+.nav .logout {
+  float: right;
+  background: transparent;
+  border: none;
+  color: #333;
+}
+.form-box {
+  background: #e6e6e6;
+  padding: 20px;
+  border: 1px solid #ccc;
+  margin-bottom: 20px;
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px 30px;
+  margin-bottom: 20px;
+}
+.form-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.form-group label {
+  width: 80px;
+  text-align: right;
+  font-size: 14px;
+  color: #333;
+}
+.form-group input, .form-group select {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid #999;
+  font-size: 14px;
+  background: #fff;
+}
+.btn-submit {
+  display: block;
+  width: 180px;
+  height: 36px;
+  margin: 0 auto;
+  background: #e6e6e6;
+  border: 1px solid #666;
+  font-size: 14px;
+  cursor: pointer;
+}
+.table-box {
+  background: #e6e6e6;
+  padding: 10px;
+  border: 1px solid #ccc;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #999;
+  background: #fff;
+}
+th, td {
+  border: 1px solid #999;
+  padding: 8px 12px;
+  text-align: center;
+  font-size: 14px;
+  white-space: nowrap;
+}
+th {
+  background: #f0f0f0;
+  font-weight: bold;
+}
+.type-in {
+  color: #009900;
+  font-weight: bold;
+}
+.type-out {
+  color: #cc0000;
+  font-weight: bold;
+}
+.btn-delete {
+  background: #ff4444;
+  color: #fff;
+  border: 1px solid #cc0000;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.flash {
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  background: #ffebee;
+  color: #b71c1c;
+  border: 1px solid #f44336;
+  font-size: 14px;
+}
+@media (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .form-group label {
+    width: 70px;
+  }
+  table {
+    display: block;
+    overflow-x: auto;
+  }
+}
+</style>
 </head>
 <body>
-  <div class="header">{{ system_name }}</div>
-  <div class="nav">
-    <a href="/">资产列表</a>
-    <a href="/record" class="active">出入记录</a>
-    <a href="/query">资产查询</a>
-    <a href="/logout" class="logout">退出登录</a>
-  </div>
+<div class="header">{{system_name}}</div>
+<div class="nav">
+  <a href="/">资产列表</a>
+  <a href="/record" class="active">出入记录</a>
+  <a href="/query">资产查询</a>
+  <a href="/logout" class="logout">退出登录</a>
+</div>
+<div class="container">
+  {% with msg=get_flashed_messages() %}{% if msg %}{% for m in msg %}
+  <div class="flash">{{m}}</div>{% endfor %}{% endif %}{% endwith %}
 
-  <div class="container">
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}
-        {% for msg in messages %}
-          <div class="flash flash-error">{{ msg }}</div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
-
-    <div class="form-box">
-      <form method="post" action="/do_record">
+  <div class="form-box">
+    <form method="post" action="/do_record">
+      <div class="form-grid">
         <div class="form-group">
-          <label>资产编号 <span class="required">*</span></label>
+          <label>资产编号<span style="color:red">*</span>：</label>
           <input type="text" name="asset_id" required placeholder="请输入资产编号">
         </div>
         <div class="form-group">
-          <label>操作人 <span class="required">*</span></label>
-          <input type="text" name="person" required placeholder="请输入操作人姓名">
+          <label>操作人<span style="color:red">*</span>：</label>
+          <input type="text" name="person" required placeholder="请输入操作人">
         </div>
         <div class="form-group">
-          <label>操作类型</label>
+          <label>类型：</label>
           <select name="type">
             <option value="领用">领用</option>
             <option value="归还">归还</option>
           </select>
         </div>
         <div class="form-group">
-          <label>数量 <span class="required">*</span></label>
-          <input type="number" name="quantity" value="1" min="1" required placeholder="请输入操作数量">
+          <label>数量<span style="color:red">*</span>：</label>
+          <input type="number" name="quantity" value="1" min="1" required>
         </div>
-        <div class="form-group hide-mobile">
-          <label>使用用途</label>
-          <input type="text" name="purpose" placeholder="请输入领用/归还用途">
+        <div class="form-group">
+          <label>用途：</label>
+          <input type="text" name="purpose" placeholder="请输入用途">
         </div>
-        <div class="form-group hide-mobile">
-          <label>经手人</label>
-          <input type="text" name="handler" placeholder="请输入经手人姓名">
+        <div class="form-group">
+          <label>经手人：</label>
+          <input type="text" name="handler" placeholder="请输入经手人">
         </div>
-        <button type="submit" class="btn">提交记录</button>
-      </form>
-    </div>
-
-    <div class="table-box">
-      <table>
-        <thead>
-          <tr>
-            <th>操作时间</th>
-            <th>资产编号</th>
-            <th>操作人</th>
-            <th>类型</th>
-            <th>数量</th>
-            <th class="hide-mobile">用途</th>
-            <th class="hide-mobile">经手人</th>
-            <th>操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for record in records %}
-          <tr class="swipe-item" data-id="{{ record.id }}">
-            <td colspan="8" class="swipe-content">
-              <table width="100%">
-                <tr>
-                  <td width="20%">{{ record.time }}</td>
-                  <td width="12%">{{ record.asset_id }}</td>
-                  <td width="15%">{{ record.person }}</td>
-                  <td width="10%" class="{{ 'type-out' if record.type=='领用' else 'type-in' }}">{{ record.type }}</td>
-                  <td width="8%">{{ record.quantity }}</td>
-                  <td class="hide-mobile" width="15%">{{ record.purpose }}</td>
-                  <td class="hide-mobile" width="15%">{{ record.handler }}</td>
-                  <td width="5%">
-                    <form method="post" action="/delete_record" onsubmit="return confirm('确定删除该记录？删除后库存将自动恢复！')" style="margin:0;">
-                      <input type="hidden" name="record_id" value="{{ record.id }}">
-                      <button type="submit" class="btn-delete-pc">删除</button>
-                    </form>
-                  </td>
-                </tr>
-              </table>
-            </td>
-            <button class="swipe-delete" onclick="deleteRecord('{{ record.id }}')">删除</button>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+      </div>
+      <button type="submit" class="btn-submit">提交记录</button>
+    </form>
   </div>
 
-  <!-- 左滑删除JS + 隐藏提交表单 -->
-  <form id="deleteRecordForm" method="post" action="/delete_record" style="display: none;">
-    <input type="hidden" name="record_id" id="deleteRecordId">
-  </form>
-  <script>
-    // 左滑删除核心逻辑
-    const swipeItems = document.querySelectorAll('.swipe-item');
-    let startX = 0;
-    let moveX = 0;
-    let isSwiping = false;
-
-    // 重置所有项的滑动状态
-    const resetSwipe = () => {
-      swipeItems.forEach(item => {
-        item.querySelector('.swipe-content').style.transform = 'translateX(0)';
-      });
-    };
-
-    // 左滑事件绑定
-    swipeItems.forEach(item => {
-      const content = item.querySelector('.swipe-content');
-      // 触摸开始
-      item.addEventListener('touchstart', (e) => {
-        startX = e.touches[0].clientX;
-        isSwiping = true;
-        resetSwipe();
-      });
-      // 触摸移动
-      item.addEventListener('touchmove', (e) => {
-        if (!isSwiping) return;
-        moveX = e.touches[0].clientX - startX;
-        // 仅允许左滑，最大左滑距离80px（删除按钮宽度）
-        if (moveX < 0 && moveX > -80) {
-          content.style.transform = `translateX(${moveX}px)`;
-        } else if (moveX <= -80) {
-          content.style.transform = 'translateX(-80px)';
-        }
-      });
-      // 触摸结束
-      item.addEventListener('touchend', () => {
-        isSwiping = false;
-        // 滑动距离超过40px，保持展开；否则回弹
-        if (moveX < -40) {
-          content.style.transform = 'translateX(-80px)';
-        } else {
-          content.style.transform = 'translateX(0)';
-        }
-      });
-      // 点击空白处重置
-      document.addEventListener('click', (e) => {
-        if (!e.target.closest('.swipe-item')) resetSwipe();
-      });
-    });
-
-    // 删除记录方法（自动恢复库存）
-    function deleteRecord(recordId) {
-      if (confirm('确定删除该记录？删除后对应资产库存将自动恢复！')) {
-        document.getElementById('deleteRecordId').value = recordId;
-        document.getElementById('deleteRecordForm').submit();
-      } else {
-        resetSwipe();
-      }
-    }
-  </script>
+  <div class="table-box">
+    <table>
+      <thead>
+        <tr>
+          <th>时间</th>
+          <th>资产编号</th>
+          <th>操作人</th>
+          <th>类型</th>
+          <th>数量</th>
+          <th>用途</th>
+          <th>经手人</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in records %}
+        <tr>
+          <td>{{r.time}}</td>
+          <td>{{r.asset_id}}</td>
+          <td>{{r.person}}</td>
+          <td class="{{'type-out' if r.type=='领用' else 'type-in'}}">{{r.type}}</td>
+          <td>{{r.quantity}}</td>
+          <td>{{r.purpose}}</td>
+          <td>{{r.handler}}</td>
+          <td>
+            <form method="post" action="/delete_record" onsubmit="return confirm('确定删除该记录？')" style="display:inline;">
+              <input type="hidden" name="record_id" value="{{r.id}}">
+              <button type="submit" class="btn-delete">删除</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 </body>
 </html>

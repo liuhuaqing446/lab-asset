@@ -1,52 +1,65 @@
 <!DOCTYPE html>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width">
-<title>资产查询</title>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0,user-scalable=no">
+<title>{{system_name}}</title>
 <style>
-*{box-sizing:border-box}
-body{margin:0;font-family:微软雅黑;background:#f5f7fa}
-.header{background:#2a5c96;color:white;padding:16px 20px}
-.container{max-width:1200px;margin:auto;padding:20px}
-.card{background:white;border-radius:12px;box-shadow:0 2px 10px #0000000a;padding:24px}
-input,button{width:100%;padding:12px;margin:6px 0;border:1px solid #ddd;border-radius:6px}
-button{background:#2a5c96;color:white;border:none}
-#result{margin-top:20px;padding:16px;background:#f8f9fa;border-radius:6px}
-.nav{display:flex;gap:10px;margin-bottom:20px}
-.nav a{padding:10px 16px;background:white;border-radius:6px;text-decoration:none;color:#333}
-.nav a.active{background:#2a5c96;color:white}
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui, sans-serif;}
+body{background:#f5f7fa;}
+.container{width:100%;max-width:1200px;margin:0 auto;padding:0 12px;}
+.header{background:#2a5c96;color:#fff;padding:16px;text-align:center;font-size:20px;}
+.nav{background:#fff;padding:12px;display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+.nav a{flex:1;min-width:100px;text-align:center;padding:10px 8px;border-radius:8px;text-decoration:none;color:#333;}
+.nav a.active{background:#2a5c96;color:#fff;}
+.form-box,.result-box{background:#fff;padding:16px;border-radius:12px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,0.05);}
+.form-box input{width:100%;padding:14px 12px;border:1px solid #eee;border-radius:8px;margin-bottom:12px;}
+.btn{width:100%;padding:14px;background:#2a5c96;color:#fff;border:none;border-radius:8px;font-size:16px;min-height:48px;}
+.asset-info{line-height:2;margin-bottom:20px;}
+.status-in{color:#07c160;font-weight:bold;}
+.status-out{color:#fa4753;font-weight:bold;}
+.record-item{padding:12px 0;border-bottom:1px solid #f5f5f5;line-height:1.8;}
 </style>
-
-<div class="header"><h2>资产查询</h2> <a href="/logout" style="color:white">退出</a></div>
-<div class="container">
+</head>
+<body>
+<div class="header">{{system_name}}</div>
 <div class="nav">
 <a href="/">资产列表</a>
 <a href="/record">出入记录</a>
-<a class="active" href="/query">资产查询</a>
+<a href="/query" class="active">资产查询</a>
+<a href="/logout">退出登录</a>
 </div>
-
-<div class="card">
-<input id="asset_id" placeholder="输入资产编号">
-<button onclick="search()">查询</button>
-<div id="result"></div>
+<div class="container">
+<div class="form-box">
+<input id="aid" placeholder="输入资产编号" type="text">
+<button class="btn" onclick="search()">查询</button>
+</div>
+<div class="result-box" id="res" style="display:none">
+<div id="info"></div>
+<div id="list"></div>
 </div>
 </div>
-
 <script>
-async function search(){
-    const id = document.getElementById('asset_id').value
-    const res = await fetch('/api/asset',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({asset_id:id})
-    })
-    const data = await res.json()
-    if(!data.ok){document.getElementById('result').innerText="未找到资产";return}
-    const a = data.asset
-    let html = `<h4>${a.name}（${a.asset_id}）</h4>
-    状态：${a.status}<br>总数量：${a.total_quantity}<br>剩余：${a.current_quantity}<br><br>`
-    data.unreturned.forEach(u=>{
-        html += u.time + ' ' + u.person + ' 领用 ' + u.quantity + '个<br>'
-    })
-    document.getElementById('result').innerHTML = html
+function search(){
+let id=document.getElementById('aid').value.trim();
+if(!id){alert('请输入编号');return;}
+fetch("/api/asset",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({asset_id:id})})
+.then(res=>res.json()).then(data=>{
+if(!data.ok){document.getElementById('info').innerHTML='未找到';document.getElementById('res').style.display='block';return;}
+let a=data.asset;
+document.getElementById('info').innerHTML=`
+<p>编号：${a.asset_id}</p>
+<p>名称：${a.name}</p>
+<p>采购：${a.purchase_time}</p>
+<p>总数：${a.total_quantity} 剩余：${a.current_quantity}</p>
+<p>状态：<span class="${a.status=='在库'?'status-in':'status-out'}">${a.status}</span></p>`;
+let h='';
+data.unreturned.forEach(i=>{h+=`<div class="record-item"><p>${i.time} ${i.type} ${i.person} ${i.quantity}</p></div>`;});
+document.getElementById('list').innerHTML=h;
+document.getElementById('res').style.display='block';
+});
 }
+document.getElementById('aid').addEventListener('keydown',e=>{if(e.key=='Enter')search();});
 </script>
+</body>
+</html>

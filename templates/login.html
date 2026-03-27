@@ -1,19 +1,28 @@
 <!DOCTYPE html>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width">
-<title>登录</title>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{system_name}}</title>
 <style>
-body{display:flex;justify-content:center;align-items:center;height:100vh;margin:0;background:#f5f7fa;font-family:微软雅黑}
-.box{background:white;padding:30px;border-radius:12px;box-shadow:0 2px 20px #00000010;width:340px}
-input{width:100%;padding:12px;margin:8px 0;border:1px solid #ddd;border-radius:6px}
-button{width:100%;padding:12px;background:#2a5c96;color:white;border:none;border-radius:6px}
-h2{text-align:center}
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui, sans-serif;}
+body{background:#f5f7fa;display:flex;align-items:center;justify-content:center;height:100vh;padding:20px;}
+.login{background:#fff;padding:30px;border-radius:12px;width:100%;max-width:400px;box-shadow:0 4px 20px rgba(0,0,0,0.1);}
+.login h2{text-align:center;margin-bottom:20px;}
+input{width:100%;padding:14px;margin-bottom:15px;border:1px solid #ddd;border-radius:8px;}
+button{width:100%;padding:14px;background:#2a5c96;color:#fff;border:none;border-radius:8px;}
+.flash{padding:10px;color:#721c24;background:#f8d7da;border-radius:8px;margin-bottom:15px;text-align:center;}
 </style>
-<div class="box">
-<h2>实验室资产管理系统</h2>
+</head>
+<body>
+<div class="login">
+<h2>{{system_name}}</h2>
+{% with m=get_flashed_messages() %}{% if m %}{% for i in m %}<div class="flash">{{i}}</div>{% endfor %}{% endif %}{% endwith %}
 <form method="post">
 <input name="username" placeholder="账号" required>
-<input name="password" type="password" placeholder="密码" required>
-<button>登录</button>
+<input type="password" name="password" placeholder="密码" required>
+<button type="submit">登录</button>
 </form>
 </div>
+</body>
+</html>

@@ -1,44 +1,66 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>{{ system_name }}</title>
-  <style>
-    /* 全局重置+自适应基础 */
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-    body { background: #f5f7fa; }
-    .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 12px; }
-    .header { background: #2a5c96; color: #fff; padding: 16px; text-align: center; font-size: 20px; font-weight: 500; }
-    .nav { background: #fff; margin-bottom: 16px; padding: 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-    .nav a { text-decoration: none; color: #333; border-radius: 8px; padding: 10px 8px; font-size: 14px; flex: 1; min-width: 100px; text-align: center; transition: 0.2s; }
-    .nav a.active { background: #2a5c96; color: #fff; }
-    .nav a.logout { margin-left: auto; min-width: auto; }
-    .form-box, .result-box { background: #fff; padding: 16px; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-    .form-box input { width: 100%; padding: 14px 12px; font-size: 16px; border: 1px solid #eee; border-radius: 8px; outline: none; margin-bottom: 12px; }
-    .form-box input:focus { border-color: #2a5c96; }
-    .btn { display: inline-block; border: none; border-radius: 8px; padding: 14px 20px; font-size: 16px; cursor: pointer; min-height: 48px; text-align: center; transition: 0.2s; background: #2a5c96; color: #fff; width: 100%; }
-    .btn:hover { background: #234b7a; }
-    .result-box h3 { font-size: 18px; font-weight: 500; margin-bottom: 16px; color: #333; }
-    .asset-info { line-height: 2; font-size: 16px; margin-bottom: 20px; }
-    .status-in { color: #07c160; font-weight: 500; }
-    .status-out { color: #fa4753; font-weight: 500; }
-    .record-list { border-top: 1px solid #f5f5f5; padding-top: 20px; }
-    .record-item { padding: 12px 0; border-bottom: 1px solid #f5f5f5; font-size: 14px; line-height: 1.8; }
-    .record-type-out { color: #fa4753; }
-    .record-type-in { color: #07c160; }
-    /* 桌面端适配 (>768px) */
-    @media (min-width: 768px) {
-      .nav { flex-wrap: nowrap; }
-      .nav a { flex: none; padding: 10px 20px; font-size: 16px; }
-      .form-box, .result-box { padding: 30px; }
-      .asset-info { font-size: 18px; }
-      .record-item { font-size: 16px; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0,user-scalable=no">
+<title>{{system_name}}</title>
+<style>
+* {box-sizing:border-box;margin:0;padding:0;font-family:system-ui, "Microsoft YaHei", sans-serif;}
+body {background:#f8f9fa;line-height:1.4;}
+/* 容器 */
+.container {max-width:900px;margin:0 auto;padding:16px;}
+/* 头部 */
+.header {background:#2a5c96;color:#fff;padding:18px;text-align:center;font-size:24px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,0.08);margin-bottom:20px;border-radius:8px;}
+/* 导航 */
+.nav {background:#fff;padding:12px 16px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.05);margin-bottom:20px;display:flex;align-items:center;gap:4px;}
+.nav a {padding:8px 18px;border-radius:6px;text-decoration:none;color:#333;font-size:14px;transition:all 0.2s ease;}
+.nav a.active {background:#2a5c96;color:#fff;font-weight:600;}
+.nav a:hover:not(.active):not(.logout) {background:#f5f7fa;color:#2a5c96;}
+.nav a.logout {margin-left:auto;color:#666;padding:8px 0;}
+.nav a.logout:hover {color:#2a5c96;background:transparent;}
+/* 查询表单 */
+.form-box {background:#fff;padding:30px 24px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.05);margin-bottom:20px;text-align:center;}
+.form-box input {width:100%;max-width:450px;padding:12px 18px;border:1px solid #e5e7eb;border-radius:8px;font-size:16px;transition:all 0.2s ease;outline:none;margin-bottom:24px;}
+.form-box input:focus {border-color:#2a5c96;box-shadow:0 0 0 3px rgba(42,92,150,0.1);}
+.btn-query {width:100%;max-width:450px;height:46px;background:#2a5c96;color:#fff;border:none;border-radius:8px;font-size:16px;cursor:pointer;transition:all 0.2s ease;}
+.btn-query:hover {background:#234b7a;transform:translateY(-1px);}
+.btn-query:active {transform:translateY(0);}
+/* 结果盒子 */
+.result-box {background:#fff;padding:28px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.05);display:none;}
+/* 资产信息 */
+.asset-info {line-height:2.4;font-size:15px;margin-bottom:28px;padding-bottom:20px;border-bottom:1px solid #e5e7eb;}
+.asset-info p {display:flex;justify-content:space-between;padding:0 8px;}
+.asset-info p span:first-child {color:#666;width:120px;text-align:right;padding-right:16px;}
+.asset-info p span:last-child {font-weight:500;color:#333;flex:1;text-align:left;}
+.status-in {color:#07c160;font-weight:600;}
+.status-out {color:#e03131;font-weight:600;}
+/* 记录列表 */
+.record-list h4 {font-size:16px;color:#333;margin-bottom:16px;padding-left:8px;border-left:4px solid #2a5c96;}
+.record-item {padding:14px;border-radius:6px;background:#fafbfc;margin-bottom:12px;border:1px solid #f1f3f5;}
+.record-item p {font-size:14px;margin-bottom:8px;}
+.record-item p:last-child {margin-bottom:0;}
+.record-item p span {color:#666;margin-right:8px;}
+/* 提示框 */
+.empty-tip {text-align:center;color:#999;padding:40px 0;font-size:15px;}
+.loading-tip {text-align:center;color:#666;padding:40px 0;font-size:15px;}
+/* 响应式 */
+@media (max-width:768px) {
+  .nav {flex-wrap:wrap;padding:10px;}
+  .nav a {padding:6px 12px;font-size:13px;flex:1;text-align:center;}
+  .nav a.logout {margin-left:0;flex:100%;text-align:right;}
+  .header {padding:14px;font-size:20px;}
+  .form-box {padding:20px 16px;}
+  .form-box input, .btn-query {max-width:100%;font-size:15px;}
+  .result-box {padding:20px 16px;}
+  .asset-info {line-height:2;font-size:14px;}
+  .asset-info p span:first-child {width:90px;padding-right:8px;}
+  .record-item {padding:12px;font-size:13px;}
+}
+</style>
 </head>
 <body>
-  <div class="header">{{ system_name }}</div>
+<div class="header">{{system_name}}</div>
+<div class="container">
   <div class="nav">
     <a href="/">资产列表</a>
     <a href="/record">出入记录</a>
@@ -46,81 +68,91 @@
     <a href="/logout" class="logout">退出登录</a>
   </div>
 
-  <div class="container">
-    <div class="form-box">
-      <input type="text" id="assetId" placeholder="请输入资产编号查询">
-      <button class="btn" onclick="searchAsset()">查询资产</button>
-    </div>
-
-    <div class="result-box" id="resultBox" style="display: none;">
-      <div id="assetInfo" class="asset-info"></div>
-      <div class="record-list" id="recordList"></div>
-    </div>
+  <div class="form-box">
+    <input type="text" id="assetId" placeholder="请输入资产编号进行查询" autocomplete="off">
+    <button class="btn-query" onclick="searchAsset()">查询资产信息</button>
   </div>
 
-  <script>
-    const baseUrl = "{{ request.host_url }}";
-    // 资产查询方法
-    function searchAsset() {
-      const assetId = document.getElementById("assetId").value.trim();
-      if (!assetId) {
-        alert("请输入资产编号！");
-        return;
-      }
-      // 显示加载状态
-      document.getElementById("resultBox").style.display = "block";
-      document.getElementById("assetInfo").innerHTML = "<p style='text-align:center;'>查询中...</p>";
-      document.getElementById("recordList").innerHTML = "";
+  <div class="result-box" id="resultBox">
+    <div class="asset-info" id="assetInfo"></div>
+    <div class="record-list" id="recordList"></div>
+  </div>
+</div>
 
-      fetch(baseUrl + "api/asset", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ asset_id: assetId })
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (!data.ok) {
-          document.getElementById("assetInfo").innerHTML = "<p style='color:#fa4753;'>未找到该资产，请检查编号！</p>";
-          return;
-        }
-        const asset = data.asset;
-        const unreturned = data.unreturned;
-        // 渲染资产基础信息
-        document.getElementById("assetInfo").innerHTML = `
-          <p>资产编号：${asset.asset_id}</p>
-          <p>资产名称：${asset.name}</p>
-          <p>采购时间：${asset.purchase_time}</p>
-          <p>存放位置：${asset.location || '未填写'}</p>
-          <p>总数量：${asset.total_quantity} | 剩余数量：${asset.current_quantity}</p>
-          <p>当前状态：<span class="${asset.status == '在库' ? 'status-in' : 'status-out'}">${asset.status}</span></p>
-        `;
-        // 渲染未归还记录
-        if (unreturned.length === 0) {
-          document.getElementById("recordList").innerHTML = "<p style='text-align:center; color:#666;'>暂无未归还记录</p>";
-        } else {
-          let recordHtml = "<h4 style='margin-bottom:12px;'>未归还领用记录</h4>";
-          unreturned.forEach(r => {
-            recordHtml += `
-              <div class="record-item">
-                <p>操作时间：${r.time}</p>
-                <p>领用人员：${r.person}</p>
-                <p>领用数量：${r.quantity}台</p>
-                <p>使用用途：${r.purpose || '未填写'}</p>
-              </div>
-            `;
-          });
-          document.getElementById("recordList").innerHTML = recordHtml;
-        }
-      })
-      .catch(err => {
-        document.getElementById("assetInfo").innerHTML = "<p style='color:#fa4753;'>查询失败，请稍后重试！</p>";
-        console.error(err);
-      });
+<script>
+// 基础路径，适配不同部署环境
+const baseUrl = window.location.origin;
+// 回车查询，优化操作体验
+document.getElementById('assetId').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') searchAsset();
+  if (e.key === ' ') e.preventDefault(); // 禁止空格输入
+});
+// 核心查询方法，优化请求流畅度
+function searchAsset() {
+  const assetId = document.getElementById("assetId").value.trim();
+  if (!assetId) {
+    alert("请输入有效的资产编号！");
+    return;
+  }
+  // 初始化结果框
+  const resultBox = document.getElementById("resultBox");
+  const assetInfo = document.getElementById("assetInfo");
+  const recordList = document.getElementById("recordList");
+  resultBox.style.display = "block";
+  assetInfo.innerHTML = '<div class="loading-tip">正在查询，请稍候...</div>';
+  recordList.innerHTML = "";
+
+  // 发起异步请求，优化错误处理
+  fetch(`${baseUrl}/api/asset`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ asset_id: assetId }),
+    timeout: 5000 // 设置超时时间，提升体验
+  })
+  .then(res => {
+    if (!res.ok) throw new Error("网络请求失败，请检查网络");
+    return res.json();
+  })
+  .then(data => {
+    if (!data.ok) {
+      assetInfo.innerHTML = '<div class="empty-tip" style="color:#e03131;">未找到该资产，请检查编号是否正确！</div>';
+      return;
     }
-    // 回车触发查询
-    document.getElementById("assetId").addEventListener("keydown", (e) => {
-      if (e.key === "Enter") searchAsset();
+    // 渲染资产信息
+    const asset = data.asset;
+    assetInfo.innerHTML = `
+      <p><span>资产编号：</span><span>${asset.asset_id}</span></p>
+      <p><span>资产名称：</span><span>${asset.name}</span></p>
+      <p><span>设备型号：</span><span>${asset.model || '未填写'}</span></p>
+      <p><span>采购时间：</span><span>${asset.purchase_time}</span></p>
+      <p><span>存放位置：</span><span>${asset.location || '未填写'}</span></p>
+      <p><span>资产总数量：</span><span>${asset.total_quantity}</span></p>
+      <p><span>剩余可领用数量：</span><span>${asset.current_quantity}</span></p>
+      <p><span>当前资产状态：</span><span class="${asset.status=='在库'?'status-in':'status-out'}">${asset.status}</span></p>
+    `;
+    // 渲染领用记录
+    const unreturned = data.unreturned || [];
+    if (unreturned.length === 0) {
+      recordList.innerHTML = '<div class="empty-tip">该资产暂无未归还的领用记录</div>';
+      return;
+    }
+    recordList.innerHTML = '<h4>未归还领用记录</h4>';
+    unreturned.forEach(r => {
+      recordList.innerHTML += `
+        <div class="record-item">
+          <p><span>操作时间：</span>${r.time}</p>
+          <p><span>领用人员：</span>${r.person}</p>
+          <p><span>领用数量：</span>${r.quantity}</p>
+          <p><span>使用用途：</span>${r.purpose || '未填写'}</p>
+        </div>
+      `;
     });
-  </script>
+  })
+  .catch(err => {
+    assetInfo.innerHTML = `<div class="empty-tip" style="color:#e03131;">${err.message}，请稍后重试！</div>`;
+    console.error("查询错误：", err);
+  });
+}
+</script>
 </body>
 </html>

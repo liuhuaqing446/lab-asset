@@ -1,111 +1,215 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0,user-scalable=no">
-<title>{{system_name}}</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui, sans-serif;}
-body{background:#f5f7fa;}
-.container{width:100%;max-width:1200px;margin:0 auto;padding:0 12px;}
-.header{background:#2a5c96;color:#fff;padding:16px;text-align:center;font-size:20px;}
-.nav{background:#fff;padding:12px;display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
-.nav a{flex:1;min-width:100px;text-align:center;padding:10px 8px;border-radius:8px;text-decoration:none;color:#333;}
-.nav a.active{background:#2a5c96;color:#fff;}
-.form-box,.table-box{background:#fff;padding:16px;border-radius:12px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,0.05);}
-.form-group{margin-bottom:12px;}
-.form-group label{font-size:14px;color:#666;margin-bottom:4px;display:block;}
-.form-group input{width:100%;padding:14px 12px;border:1px solid #eee;border-radius:8px;}
-.btn{width:100%;padding:14px;background:#2a5c96;color:#fff;border:none;border-radius:8px;font-size:16px;min-height:48px;}
-.flash{padding:12px;border-radius:8px;margin-bottom:12px;background:#f8d7da;color:#721c24;}
-.status-in{color:#07c160;font-weight:bold;}
-.status-out{color:#fa4753;font-weight:bold;}
-table{width:100%;border-collapse:collapse;}
-th,td{padding:10px 6px;font-size:14px;border-bottom:1px solid #f5f5f5;}
-.hide-mobile{display:none;}
-.swipe-item{position:relative;display:flex;}
-.swipe-content{width:100%;background:#fff;transition:transform 0.3s;z-index:2;}
-.swipe-delete{position:absolute;right:0;top:0;bottom:0;width:80px;background:#fa4753;color:#fff;border:none;z-index:1;}
-.btn-delete-pc{display:none;background:#fa4753;color:#fff;border:none;padding:6px 12px;border-radius:6px;}
-@media(min-width:768px){
-  .hide-mobile{display:table-cell;}
-  .swipe-delete{display:none;}
-  .btn-delete-pc{display:inline-block;}
-  th,td{padding:15px;}
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>{{ system_name }}</title>
+  <style>
+    /* 全局重置+自适应基础 */
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    body { background: #f5f7fa; }
+    .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 12px; }
+    .header { background: #2a5c96; color: #fff; padding: 16px; text-align: center; font-size: 20px; font-weight: 500; }
+    .nav { background: #fff; margin-bottom: 16px; padding: 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .nav a { text-decoration: none; color: #333; border-radius: 8px; padding: 10px 8px; font-size: 14px; flex: 1; min-width: 100px; text-align: center; transition: 0.2s; }
+    .nav a.active { background: #2a5c96; color: #fff; }
+    .nav a.logout { margin-left: auto; min-width: auto; }
+    .form-box, .table-box { background: #fff; padding: 16px; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .form-box h3 { font-size: 18px; font-weight: 500; margin-bottom: 16px; color: #333; }
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-size: 14px; color: #666; margin-bottom: 4px; }
+    .form-group input, .form-group select { width: 100%; padding: 14px 12px; font-size: 16px; border: 1px solid #eee; border-radius: 8px; outline: none; }
+    .form-group input:focus, .form-group select:focus { border-color: #2a5c96; }
+    .required { color: #fa4753; }
+    .btn { display: inline-block; border: none; border-radius: 8px; padding: 14px 20px; font-size: 16px; cursor: pointer; min-height: 48px; text-align: center; transition: 0.2s; background: #2a5c96; color: #fff; width: 100%; }
+    .btn:hover { background: #234b7a; }
+    .flash { padding: 12px; border-radius: 8px; margin-bottom: 12px; font-size: 14px; }
+    .flash-error { background: #f8d7da; color: #721c24; }
+    .status-in { color: #07c160; font-weight: 500; }
+    .status-out { color: #fa4753; font-weight: 500; }
+    .table-box h3 { font-size: 18px; font-weight: 500; margin-bottom: 16px; color: #333; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 10px 6px; font-size: 14px; text-align: left; border-bottom: 1px solid #f5f5f5; white-space: normal; word-break: break-word; }
+    th { background: #f8f9fa; font-weight: 500; color: #666; }
+    /* 移动端隐藏次要列 */
+    .hide-mobile { display: none; }
+    /* 左滑删除核心样式 - 仅手机端生效 */
+    .swipe-item { position: relative; display: flex; align-items: center; justify-content: space-between; height: 100%; cursor: pointer; }
+    .swipe-content { width: 100%; position: relative; z-index: 2; background: #fff; transition: transform 0.3s ease; }
+    .swipe-delete { position: absolute; right: 0; top: 0; bottom: 0; z-index: 1; width: 80px; background: #fa4753; color: #fff; border: none; border-radius: 0; cursor: pointer; font-size: 14px; }
+    .btn-delete-pc { display: none; border: none; background: #fa4753; color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+    /* 桌面端适配 (>768px) */
+    @media (min-width: 768px) {
+      .nav { flex-wrap: nowrap; }
+      .nav a { flex: none; padding: 10px 20px; font-size: 16px; }
+      .form-box, .table-box { padding: 30px; }
+      .hide-mobile { display: table-cell; }
+      .swipe-delete { display: none; }
+      .btn-delete-pc { display: inline-block; }
+      th, td { padding: 15px; font-size: 16px; }
+      .form-group { margin-bottom: 15px; }
+    }
+  </style>
 </head>
 <body>
-<div class="header">{{system_name}}</div>
-<div class="nav">
-<a href="/" class="active">资产列表</a>
-<a href="/record">出入记录</a>
-<a href="/query">资产查询</a>
-<a href="/logout">退出登录</a>
-</div>
-<div class="container">
-{% with msg=get_flashed_messages() %}{% if msg %}{% for m in msg %}
-<div class="flash">{{m}}</div>{% endfor %}{% endif %}{% endwith %}
+  <div class="header">{{ system_name }}</div>
+  <div class="nav">
+    <a href="/" class="active">资产列表</a>
+    <a href="/record">出入记录</a>
+    <a href="/query">资产查询</a>
+    <a href="/logout" class="logout">退出登录</a>
+  </div>
 
-<div class="form-box">
-<h3>新增资产</h3>
-<form method="post" action="/add_asset">
-<div class="form-group"><label>资产编号 *</label><input name="asset_id" required></div>
-<div class="form-group"><label>资产名称 *</label><input name="name" required></div>
-<div class="form-group hide-mobile"><label>型号</label><input name="model"></div>
-<div class="form-group"><label>采购时间</label><input type="date" name="purchase_time"></div>
-<div class="form-group hide-mobile"><label>位置</label><input name="location"></div>
-<div class="form-group"><label>总数</label><input type="number" name="total_quantity" value="1" min="1"></div>
-<button class="btn" type="submit">添加</button>
-</form>
-</div>
+  <div class="container">
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for msg in messages %}
+          <div class="flash flash-error">{{ msg }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
 
-<div class="table-box">
-<h3>资产列表</h3>
-<table>
-<thead>
-<tr><th>编号</th><th>名称</th><th class="hide-mobile">型号</th><th>采购时间</th><th class="hide-mobile">位置</th><th>总数</th><th>剩余</th><th>状态</th><th>操作</th></tr>
-</thead>
-<tbody>
-{% for a in assets %}
-<tr class="swipe-item">
-<td colspan="9" class="swipe-content">
-<table width="100%">
-<tr>
-<td>{{a.asset_id}}</td><td>{{a.name}}</td>
-<td class="hide-mobile">{{a.model}}</td>
-<td>{{a.purchase_time}}</td>
-<td class="hide-mobile">{{a.location}}</td>
-<td>{{a.total_quantity}}</td>
-<td>{{a.current_quantity}}</td>
-<td class="{{'status-in' if a.status=='在库' else 'status-out'}}">{{a.status}}</td>
-<td>
-<form method="post" action="/delete_asset" onsubmit="return confirm('确定删除？')">
-<input type="hidden" name="asset_id" value="{{a.asset_id}}">
-<button class="btn-delete-pc" type="submit">删除</button>
-</form>
-</td>
-</tr>
-</table>
-</td>
-<button class="swipe-delete" onclick="del('{{a.asset_id}}')">删除</button>
-</tr>
-{% endfor %}
-</tbody>
-</table>
-</div>
-</div>
+    <div class="form-box">
+      <h3>新增资产</h3>
+      <form method="post" action="/add_asset">
+        <div class="form-group">
+          <label>资产编号 <span class="required">*</span></label>
+          <input type="text" name="asset_id" required placeholder="请输入唯一资产编号">
+        </div>
+        <div class="form-group">
+          <label>资产名称 <span class="required">*</span></label>
+          <input type="text" name="asset_id" required placeholder="请输入资产名称">
+        </div>
+        <div class="form-group hide-mobile">
+          <label>型号</label>
+          <input type="text" name="model" placeholder="请输入资产型号">
+        </div>
+        <div class="form-group">
+          <label>采购时间</label>
+          <input type="date" name="purchase_time">
+        </div>
+        <div class="form-group hide-mobile">
+          <label>存放位置</label>
+          <input type="text" name="location" placeholder="请输入存放位置">
+        </div>
+        <div class="form-group">
+          <label>总数</label>
+          <input type="number" name="total_quantity" value="1" min="1" placeholder="请输入采购总数">
+        </div>
+        <button type="submit" class="btn">添加资产</button>
+      </form>
+    </div>
 
-<form id="f" method="post" action="/delete_asset" style="display:none"><input name="asset_id" id="aid"></form>
-<script>
-function del(id){if(confirm('确定删除？')){document.getElementById('aid').value=id;document.getElementById('f').submit();}}
-let sX,mX,sw;
-document.querySelectorAll('.swipe-item').forEach(i=>{
-let c=i.querySelector('.swipe-content');
-i.addEventListener('touchstart',e=>{sX=e.touches[0].clientX;sw=1;});
-i.addEventListener('touchmove',e=>{if(!sw)return;mX=e.touches[0].clientX-sX;if(mX<0&&mX>-80)c.style.transform=`translateX(${mX}px)`;else if(mX<=-80)c.style.transform='translateX(-80px)';});
-i.addEventListener('touchend',()=>{sw=0;if(mX<-40)c.style.transform='translateX(-80px)';else c.style.transform='translateX(0)';});
-});
-</script>
+    <div class="table-box">
+      <h3>资产列表</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>编号</th>
+            <th>名称</th>
+            <th class="hide-mobile">型号</th>
+            <th>采购时间</th>
+            <th class="hide-mobile">位置</th>
+            <th>总数</th>
+            <th>剩余</th>
+            <th>状态</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for asset in assets %}
+          <tr class="swipe-item" data-id="{{ asset.asset_id }}">
+            <td colspan="9" class="swipe-content">
+              <table width="100%">
+                <tr>
+                  <td width="8%">{{ asset.asset_id }}</td>
+                  <td width="12%">{{ asset.name }}</td>
+                  <td class="hide-mobile" width="15%">{{ asset.model }}</td>
+                  <td width="15%">{{ asset.purchase_time }}</td>
+                  <td class="hide-mobile" width="15%">{{ asset.location }}</td>
+                  <td width="8%">{{ asset.total_quantity }}</td>
+                  <td width="8%">{{ asset.current_quantity }}</td>
+                  <td width="10%" class="{{ 'status-in' if asset.status=='在库' else 'status-out' }}">{{ asset.status }}</td>
+                  <td width="10%">
+                    <form method="post" action="/delete_asset" onsubmit="return confirm('确定删除【{{ asset.name }}】及所有关联记录？')" style="margin:0;">
+                      <input type="hidden" name="asset_id" value="{{ asset.asset_id }}">
+                      <button type="submit" class="btn-delete-pc">删除</button>
+                    </form>
+                  </td>
+                </tr>
+              </table>
+            </td>
+            <button class="swipe-delete" onclick="deleteAsset('{{ asset.asset_id }}', '{{ asset.name }}')">删除</button>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 左滑删除JS + 表单提交隐藏表单 -->
+  <form id="deleteAssetForm" method="post" action="/delete_asset" style="display: none;">
+    <input type="hidden" name="asset_id" id="deleteAssetId">
+  </form>
+  <script>
+    // 左滑删除核心逻辑
+    const swipeItems = document.querySelectorAll('.swipe-item');
+    let startX = 0;
+    let moveX = 0;
+    let isSwiping = false;
+
+    // 重置所有项的滑动状态
+    const resetSwipe = () => {
+      swipeItems.forEach(item => {
+        item.querySelector('.swipe-content').style.transform = 'translateX(0)';
+      });
+    };
+
+    // 左滑事件绑定
+    swipeItems.forEach(item => {
+      const content = item.querySelector('.swipe-content');
+      // 触摸开始
+      item.addEventListener('touchstart', (e) => {
+        startX = e.touches[0].clientX;
+        isSwiping = true;
+        resetSwipe();
+      });
+      // 触摸移动
+      item.addEventListener('touchmove', (e) => {
+        if (!isSwiping) return;
+        moveX = e.touches[0].clientX - startX;
+        // 仅允许左滑，最大左滑距离80px（删除按钮宽度）
+        if (moveX < 0 && moveX > -80) {
+          content.style.transform = `translateX(${moveX}px)`;
+        } else if (moveX <= -80) {
+          content.style.transform = 'translateX(-80px)';
+        }
+      });
+      // 触摸结束
+      item.addEventListener('touchend', () => {
+        isSwiping = false;
+        // 滑动距离超过40px，保持展开；否则回弹
+        if (moveX < -40) {
+          content.style.transform = 'translateX(-80px)';
+        } else {
+          content.style.transform = 'translateX(0)';
+        }
+      });
+      // 点击空白处重置
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.swipe-item')) resetSwipe();
+      });
+    });
+
+    // 删除资产方法
+    function deleteAsset(assetId, assetName) {
+      if (confirm(`确定删除【${assetName}】及所有关联记录？`)) {
+        document.getElementById('deleteAssetId').value = assetId;
+        document.getElementById('deleteAssetForm').submit();
+      } else {
+        resetSwipe();
+      }
+    }
+  </script>
 </body>
 </html>

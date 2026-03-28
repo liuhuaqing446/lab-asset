@@ -6,10 +6,10 @@
 <title>{{system_name}}</title>
 <style>
 * {box-sizing:border-box;margin:0;padding:0;font-family:system-ui, "Microsoft YaHei", sans-serif;}
-body {background:#f8f9fa;line-height:1.4;}
-.container {max-width:1200px;margin:0 auto;padding:16px;}
+body {background:#f8f9fa;line-height:1.4;display:flex;justify-content:center;}
+.container {max-width:1200px;width:100%;margin:0 auto;padding:16px;}
 .header {background:#2a5c96;color:#fff;padding:18px;text-align:center;font-size:24px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,0.08);margin-bottom:20px;border-radius:8px;}
-.nav {background:#fff;padding:12px 16px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.05);margin-bottom:20px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
+.nav {background:#fff;padding:12px 16px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.05);margin-bottom:20px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:center;}
 .nav a {padding:8px 18px;border-radius:6px;text-decoration:none;color:#333;font-size:14px;transition:all 0.2s ease;white-space:nowrap;}
 .nav a.active {background:#2a5c96;color:#fff;font-weight:600;}
 .nav a:hover:not(.active):not(.logout) {background:#f5f7fa;color:#2a5c96;}
@@ -17,7 +17,7 @@ body {background:#f8f9fa;line-height:1.4;}
 .nav a.logout:hover {color:#2a5c96;background:transparent;}
 .form-box {background:#fff;padding:24px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.05);margin-bottom:20px;}
 .form-grid {display:grid;grid-template-columns:1fr 1fr;gap:18px 24px;}
-.form-group {display:flex;align-items:center;gap:8px;flex-wrap:nowrap;}
+.form-group {display:flex;align-items:center;gap:8px;flex-wrap:nowrap;justify-content:flex-start;}
 .form-group label {width:110px;text-align:right;font-size:14px;color:#666;flex-shrink:0;white-space:nowrap;}
 .form-group label span {color:#e03131;}
 .form-group input, .form-group select {flex:1;padding:10px 14px;border:1px solid #e5e7eb;border-radius:6px;font-size:14px;transition:all 0.2s ease;outline:none;min-width:0;}
@@ -37,11 +37,13 @@ tr:hover {background:#fafbfc;}
 .flash-success {padding:12px 16px;border-radius:6px;margin-bottom:16px;background:#f0f9ff;color:#07c160;border:1px solid #b7e4c7;animation:fadeIn 0.3s ease;}
 .flash-error {padding:12px 16px;border-radius:6px;margin-bottom:16px;background:#fff5f5;color:#e03131;border:1px solid #ffd9d9;animation:fadeIn 0.3s ease;}
 @keyframes fadeIn {from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
+/* 手机端适配：居中+单列 */
 @media (max-width:768px) {
   .form-grid {grid-template-columns:1fr;gap:14px 0;}
+  .form-group {justify-content:center;}
   .form-group label {width:90px;font-size:13px;}
   .form-group input, .form-group select {padding:8px 12px;font-size:13px;}
-  .nav {padding:10px;gap:6px;}
+  .nav {padding:10px;gap:6px;justify-content:center;}
   .nav a {padding:6px 12px;font-size:13px;flex:1;text-align:center;}
   .nav a.logout {margin-left:0;flex:100%;text-align:right;}
   th, td {padding:8px 6px;font-size:13px;}
@@ -51,8 +53,8 @@ tr:hover {background:#fafbfc;}
 </style>
 </head>
 <body>
-<div class="header">{{system_name}}</div>
 <div class="container">
+  <div class="header">{{system_name}}</div>
   <div class="nav">
     <a href="/">资产列表</a>
     <a href="/record" class="active">出入记录</a>
@@ -75,12 +77,12 @@ tr:hover {background:#fafbfc;}
   <div class="form-box">
     <form method="post" action="/do_record">
       <div class="form-grid">
-        <div class="form-group"><label>资产编号<span>*</span>：</label><input name="asset_id" required placeholder=""></div>
-        <div class="form-group"><label>操作人<span>*</span>：</label><input name="person" required placeholder=""></div>
+        <div class="form-group"><label>资产编号<span>*</span>：</label><input name="asset_id" required></div>
+        <div class="form-group"><label>操作人<span>*</span>：</label><input name="person" required></div>
         <div class="form-group"><label>操作类型：</label><select name="type"><option value="领用">领用</option><option value="归还">归还</option></select></div>
         <div class="form-group"><label>操作数量<span>*</span>：</label><input type="number" name="quantity" value="1" min="1" required></div>
-        <div class="form-group"><label>使用用途：</label><input name="purpose" placeholder=""></div>
-        <div class="form-group"><label>经手人：</label><input name="handler" placeholder=""></div>
+        <div class="form-group"><label>使用用途：</label><input name="purpose"></div>
+        <div class="form-group"><label>经手人：</label><input name="handler"></div>
       </div>
       <button type="submit" class="btn-submit">提交记录</button>
     </form>
@@ -113,6 +115,7 @@ tr:hover {background:#fafbfc;}
 </div>
 
 <script>
+// 提示框自动消失
 const flashTip = document.getElementById('flash-tip');
 if (flashTip) {
   setTimeout(() => {
@@ -122,9 +125,15 @@ if (flashTip) {
     setTimeout(() => flashTip.remove(), 600);
   }, 3000);
 }
+// 禁止资产编号输入空格
 document.querySelector('input[name="asset_id"]').addEventListener('keydown', (e) => {
   if (e.key === ' ') e.preventDefault();
 });
+// 定时唤醒服务：每10分钟访问一次，避免Render休眠
+setInterval(() => {
+  fetch(window.location.origin)
+    .catch(err => console.log('唤醒请求失败:', err));
+}, 600000);
 </script>
 </body>
 </html>

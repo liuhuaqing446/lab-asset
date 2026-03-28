@@ -20,6 +20,9 @@ ADMIN_PWD = "lab123456"
 SYSTEM_NAME = "AEIM实验室管理系统"
 
 app = Flask(__name__)
+@app.route('/health')
+def health_check():
+    return 'OK', 200
 app.secret_key = "lab_asset_2026_secure_v2"
 
 # 获取北京时间（UTC+8）

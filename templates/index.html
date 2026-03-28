@@ -22,20 +22,33 @@ body {background:#f8f9fa;line-height:1.4;}
 .form-group label span {color:#e03131;}
 .form-group input {flex:1;padding:10px 14px;border:1px solid #e5e7eb;border-radius:6px;font-size:14px;transition:all 0.2s ease;outline:none;min-width:0;}
 .form-group input:focus {border-color:#2a5c96;box-shadow:0 0 0 3px rgba(42,92,150,0.1);}
-/* 全局统一：彻底移除日期输入框占位符，手机电脑一致 */
+
+/* 🔴 终极方案：彻底移除日期占位符，覆盖所有浏览器 */
 .form-group input[type="date"] {
-  padding:9px 14px;
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
+  padding: 9px 14px;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  min-height: 42px;
 }
-/* 强制取消浏览器默认的日期占位符/提示文字 */
+/* 强制隐藏所有占位符/提示文字 */
+.form-group input[type="date"]::-webkit-datetime-edit {
+  color: transparent !important;
+}
+.form-group input[type="date"]:focus::-webkit-datetime-edit {
+  color: #333 !important;
+}
+.form-group input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 1;
+  margin-left: auto;
+}
 .form-group input[type="date"]::placeholder,
 .form-group input[type="date"]::-webkit-input-placeholder,
 .form-group input[type="date"]::-moz-placeholder {
   color: transparent !important;
   opacity: 0 !important;
 }
+
 .btn-add {width:180px;height:42px;margin:20px auto 0;display:block;background:#2a5c96;color:#fff;border:none;border-radius:6px;font-size:15px;cursor:pointer;transition:all 0.2s ease;}
 .btn-add:hover {background:#234b7a;transform:translateY(-1px);}
 .btn-add:active {transform:translateY(0);}
@@ -51,7 +64,6 @@ tr:hover {background:#fafbfc;}
 .flash-success {padding:12px 16px;border-radius:6px;margin-bottom:16px;background:#f0f9ff;color:#07c160;border:1px solid #b7e4c7;animation:fadeIn 0.3s ease;}
 .flash-error {padding:12px 16px;border-radius:6px;margin-bottom:16px;background:#fff5f5;color:#e03131;border:1px solid #ffd9d9;animation:fadeIn 0.3s ease;}
 @keyframes fadeIn {from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
-/* 手机端适配：保持现状，不改动 */
 @media (max-width:768px) {
   .form-grid {grid-template-columns:1fr;gap:14px 0;}
   .form-group label {width:90px;font-size:13px;}
@@ -139,9 +151,7 @@ if (flashTip) {
 document.querySelector('input[name="asset_id"]').addEventListener('keydown', (e) => {
   if (e.key === ' ') e.preventDefault();
 });
-setInterval(() => {
-  fetch(window.location.origin).catch(err => {});
-}, 600000);
+setInterval(() => { fetch(window.location.origin).catch(err=>{}); }, 600000);
 </script>
 </body>
 </html>

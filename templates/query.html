@@ -7,9 +7,7 @@
 <style>
 * {box-sizing:border-box;margin:0;padding:0;font-family:system-ui, "Microsoft YaHei", sans-serif;}
 body {background:#f8f9fa;line-height:1.4;}
-/* 统一宽度：1200px，和列表、记录页完全一致 */
 .container {max-width:1200px;margin:0 auto;padding:16px;}
-
 .header {background:#2a5c96;color:#fff;padding:18px;text-align:center;font-size:24px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,0.08);margin-bottom:20px;border-radius:8px;}
 .nav {background:#fff;padding:12px 16px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.05);margin-bottom:20px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
 .nav a {padding:8px 18px;border-radius:6px;text-decoration:none;color:#333;font-size:14px;transition:all 0.2s ease;white-space:nowrap;}
@@ -18,29 +16,49 @@ body {background:#f8f9fa;line-height:1.4;}
 .nav a.logout {margin-left:auto;color:#666;padding:8px 0;white-space:nowrap;}
 .nav a.logout:hover {color:#2a5c96;background:transparent;}
 
-/* 统一表单样式：和另外两页一致 */
+/* 🟢 输入框/按钮居中+美观布局，和列表页统一 */
 .form-box {
-  background:#fff; padding:24px; border-radius:8px;
-  box-shadow:0 2px 6px rgba(0,0,0,0.05); margin-bottom:20px;
-  text-align:left; /* 不居中，和列表页一样左对齐 */
+  background:#fff;
+  padding: 40px 24px;
+  border-radius:8px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.05);
+  margin-bottom:20px;
+  text-align: center;
 }
 .form-box input {
-  width:100%; max-width:450px;
-  padding:10px 14px; border:1px solid #e5e7eb; border-radius:6px;
-  font-size:14px; transition:all 0.2s ease; outline:none;
-  display:block; margin-bottom:16px;
+  width: 100%;
+  max-width: 500px;
+  padding: 12px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 16px;
+  margin-bottom: 20px;
+  display: inline-block;
+  outline: none;
+  transition: all 0.2s ease;
 }
 .form-box input:focus {
-  border-color:#2a5c96;
-  box-shadow:0 0 0 3px rgba(42,92,150,0.1);
+  border-color: #2a5c96;
+  box-shadow: 0 0 0 3px rgba(42,92,150,0.1);
 }
 .btn-query {
-  width:180px; height:42px;
-  background:#2a5c96; color:#fff; border:none; border-radius:6px;
-  font-size:15px; cursor:pointer; transition:all 0.2s ease;
+  width: 200px;
+  height: 48px;
+  background: #2a5c96;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
-.btn-query:hover {background:#234b7a;transform:translateY(-1px);}
-.btn-query:active {transform:translateY(0);}
+.btn-query:hover {
+  background: #234b7a;
+  transform: translateY(-1px);
+}
+.btn-query:active {
+  transform: translateY(0);
+}
 
 .result-box {background:#fff;padding:24px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.05);display:none;}
 .asset-info {line-height:2.4;font-size:15px;margin-bottom:28px;padding-bottom:20px;border-bottom:1px solid #e5e7eb;}
@@ -56,15 +74,13 @@ body {background:#f8f9fa;line-height:1.4;}
 .record-item p span {color:#666;margin-right:8px;}
 .empty-tip {text-align:center;color:#999;padding:40px 0;font-size:15px;}
 .loading-tip {text-align:center;color:#666;padding:40px 0;font-size:15px;}
-
-/* 手机端：完全不动，保持你现在满意的适配 */
 @media (max-width:768px) {
   .nav {flex-wrap:wrap;padding:10px;gap:6px;}
   .nav a {padding:6px 12px;font-size:13px;flex:1;text-align:center;}
   .nav a.logout {margin-left:0;flex:100%;text-align:right;}
   .header {padding:14px;font-size:20px;}
-  .form-box {padding:16px;}
-  .form-box input, .btn-query {max-width:100%;font-size:15px;}
+  .form-box {padding: 30px 16px;}
+  .form-box input, .btn-query {max-width: 100%;font-size: 15px;}
   .result-box {padding:20px 16px;}
   .asset-info {line-height:2;font-size:14px;}
   .asset-info p span:first-child {width:100px;padding-right:8px;}
@@ -84,6 +100,7 @@ body {background:#f8f9fa;line-height:1.4;}
 
   <div class="form-box">
     <input type="text" id="assetId" placeholder="请输入资产编号进行查询" autocomplete="off">
+    <br>
     <button class="btn-query" onclick="searchAsset()">查询资产信息</button>
   </div>
 

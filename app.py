@@ -36,15 +36,14 @@ def format_beijing_time(dt):
 # 数据库连接
 def get_db():
     return pymysql.connect(**DB_CONFIG)
-
 # 登录校验
 @app.before_request
 def check_login():
-    if request.path in ["/login"]:
+    # 白名单：健康检查接口、登录页 不需要登录
+    if request.path in ["/login", "/health"]:
         return
     if not session.get("login"):
         return redirect("/login")
-
 # 登录页
 @app.route("/login", methods=["GET","POST"])
 def login():

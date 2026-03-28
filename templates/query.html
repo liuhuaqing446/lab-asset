@@ -7,43 +7,34 @@
 <style>
 * {box-sizing:border-box;margin:0;padding:0;font-family:system-ui, "Microsoft YaHei", sans-serif;}
 body {background:#f8f9fa;line-height:1.4;}
-/* 容器 */
 .container {max-width:900px;margin:0 auto;padding:16px;}
-/* 头部 */
 .header {background:#2a5c96;color:#fff;padding:18px;text-align:center;font-size:24px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,0.08);margin-bottom:20px;border-radius:8px;}
-/* 导航 */
 .nav {background:#fff;padding:12px 16px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.05);margin-bottom:20px;display:flex;align-items:center;gap:4px;}
 .nav a {padding:8px 18px;border-radius:6px;text-decoration:none;color:#333;font-size:14px;transition:all 0.2s ease;}
 .nav a.active {background:#2a5c96;color:#fff;font-weight:600;}
 .nav a:hover:not(.active):not(.logout) {background:#f5f7fa;color:#2a5c96;}
 .nav a.logout {margin-left:auto;color:#666;padding:8px 0;}
 .nav a.logout:hover {color:#2a5c96;background:transparent;}
-/* 查询表单 */
 .form-box {background:#fff;padding:30px 24px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.05);margin-bottom:20px;text-align:center;}
 .form-box input {width:100%;max-width:450px;padding:12px 18px;border:1px solid #e5e7eb;border-radius:8px;font-size:16px;transition:all 0.2s ease;outline:none;margin-bottom:24px;}
 .form-box input:focus {border-color:#2a5c96;box-shadow:0 0 0 3px rgba(42,92,150,0.1);}
 .btn-query {width:100%;max-width:450px;height:46px;background:#2a5c96;color:#fff;border:none;border-radius:8px;font-size:16px;cursor:pointer;transition:all 0.2s ease;}
 .btn-query:hover {background:#234b7a;transform:translateY(-1px);}
 .btn-query:active {transform:translateY(0);}
-/* 结果盒子 */
 .result-box {background:#fff;padding:28px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.05);display:none;}
-/* 资产信息 */
 .asset-info {line-height:2.4;font-size:15px;margin-bottom:28px;padding-bottom:20px;border-bottom:1px solid #e5e7eb;}
-.asset-info p {display:flex;justify-content:space-between;padding:0 8px;}
-.asset-info p span:first-child {color:#666;width:120px;text-align:right;padding-right:16px;}
+.asset-info p {display:flex;align-items:center;padding:0 8px;margin:0;}
+.asset-info p span:first-child {color:#666;width:140px;text-align:right;padding-right:16px;flex-shrink:0;}
 .asset-info p span:last-child {font-weight:500;color:#333;flex:1;text-align:left;}
 .status-in {color:#07c160;font-weight:600;}
 .status-out {color:#e03131;font-weight:600;}
-/* 记录列表 */
 .record-list h4 {font-size:16px;color:#333;margin-bottom:16px;padding-left:8px;border-left:4px solid #2a5c96;}
 .record-item {padding:14px;border-radius:6px;background:#fafbfc;margin-bottom:12px;border:1px solid #f1f3f5;}
 .record-item p {font-size:14px;margin-bottom:8px;}
 .record-item p:last-child {margin-bottom:0;}
 .record-item p span {color:#666;margin-right:8px;}
-/* 提示框 */
 .empty-tip {text-align:center;color:#999;padding:40px 0;font-size:15px;}
 .loading-tip {text-align:center;color:#666;padding:40px 0;font-size:15px;}
-/* 响应式 */
 @media (max-width:768px) {
   .nav {flex-wrap:wrap;padding:10px;}
   .nav a {padding:6px 12px;font-size:13px;flex:1;text-align:center;}
@@ -53,7 +44,7 @@ body {background:#f8f9fa;line-height:1.4;}
   .form-box input, .btn-query {max-width:100%;font-size:15px;}
   .result-box {padding:20px 16px;}
   .asset-info {line-height:2;font-size:14px;}
-  .asset-info p span:first-child {width:90px;padding-right:8px;}
+  .asset-info p span:first-child {width:100px;padding-right:8px;}
   .record-item {padding:12px;font-size:13px;}
 }
 </style>
@@ -80,21 +71,19 @@ body {background:#f8f9fa;line-height:1.4;}
 </div>
 
 <script>
-// 基础路径，适配不同部署环境
 const baseUrl = window.location.origin;
-// 回车查询，优化操作体验
+// 回车查询+禁止空格
 document.getElementById('assetId').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') searchAsset();
-  if (e.key === ' ') e.preventDefault(); // 禁止空格输入
+  if (e.key === ' ') e.preventDefault();
 });
-// 核心查询方法，优化请求流畅度
+
 function searchAsset() {
   const assetId = document.getElementById("assetId").value.trim();
   if (!assetId) {
     alert("请输入有效的资产编号！");
     return;
   }
-  // 初始化结果框
   const resultBox = document.getElementById("resultBox");
   const assetInfo = document.getElementById("assetInfo");
   const recordList = document.getElementById("recordList");
@@ -102,24 +91,23 @@ function searchAsset() {
   assetInfo.innerHTML = '<div class="loading-tip">正在查询，请稍候...</div>';
   recordList.innerHTML = "";
 
-  // 发起异步请求，优化错误处理
   fetch(`${baseUrl}/api/asset`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ asset_id: assetId }),
-    timeout: 5000 // 设置超时时间，提升体验
+    timeout: 5000
   })
   .then(res => {
-    if (!res.ok) throw new Error("网络请求失败，请检查网络");
+    if (!res.ok) throw new Error("网络请求失败");
     return res.json();
   })
   .then(data => {
     if (!data.ok) {
-      assetInfo.innerHTML = '<div class="empty-tip" style="color:#e03131;">未找到该资产，请检查编号是否正确！</div>';
+      assetInfo.innerHTML = '<div class="empty-tip" style="color:#e03131;">未找到该资产，请检查编号！</div>';
       return;
     }
-    // 渲染资产信息
     const asset = data.asset;
+    // 渲染资产信息（布局对齐，无换行）
     assetInfo.innerHTML = `
       <p><span>资产编号：</span><span>${asset.asset_id}</span></p>
       <p><span>资产名称：</span><span>${asset.name}</span></p>
@@ -130,19 +118,19 @@ function searchAsset() {
       <p><span>剩余可领用数量：</span><span>${asset.current_quantity}</span></p>
       <p><span>当前资产状态：</span><span class="${asset.status=='在库'?'status-in':'status-out'}">${asset.status}</span></p>
     `;
-    // 渲染领用记录
+    // 渲染未归还记录（按用户分组，北京时间）
     const unreturned = data.unreturned || [];
     if (unreturned.length === 0) {
       recordList.innerHTML = '<div class="empty-tip">该资产暂无未归还的领用记录</div>';
       return;
     }
-    recordList.innerHTML = '<h4>未归还领用记录</h4>';
+    recordList.innerHTML = '<h4>未归还领用记录（按用户分组）</h4>';
     unreturned.forEach(r => {
       recordList.innerHTML += `
         <div class="record-item">
-          <p><span>操作时间：</span>${r.time}</p>
           <p><span>领用人员：</span>${r.person}</p>
-          <p><span>领用数量：</span>${r.quantity}</p>
+          <p><span>未归还数量：</span>${r.quantity}</p>
+          <p><span>最新领用时间：</span>${r.time}</p>
           <p><span>使用用途：</span>${r.purpose || '未填写'}</p>
         </div>
       `;

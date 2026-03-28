@@ -2,7 +2,6 @@ from flask import Flask, render_template, request, flash, redirect, session, jso
 import pymysql
 from datetime import datetime, timedelta
 import os
-from dateutil import parser
 
 # 数据库配置
 DB_CONFIG = {
@@ -330,7 +329,7 @@ def api_asset():
         times = item["times"].split(",")
         purposes = item["purposes"].split(",")
         
-        # 解析时间为北京时间（已存储为北京时间，直接使用）
+        # 直接使用存储的北京时间
         latest_time = times[0]
         
         unreturned.append({

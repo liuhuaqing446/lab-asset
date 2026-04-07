@@ -15,76 +15,63 @@ body {background:#f8f9fa;line-height:1.4;}
 .nav a:hover:not(.active):not(.logout) {background:#f5f7fa;color:#2a5c96;}
 .nav a.logout {margin-left:auto;color:#666;padding:8px 0;white-space:nowrap;}
 .nav a.logout:hover {color:#2a5c96;background:transparent;}
+.form-box {background:#fff;padding:24px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.05);margin-bottom:20px;}
+.form-grid {display:grid;grid-template-columns:1fr 1fr;gap:18px 24px;}
+.form-group {display:flex;align-items:center;gap:8px;flex-wrap:nowrap;}
+.form-group label {width:110px;text-align:right;font-size:14px;color:#666;flex-shrink:0;white-space:nowrap;}
+.form-group label span {color:#e03131;}
+.form-group input, .form-group select {flex:1;padding:10px 14px;border:1px solid #e5e7eb;border-radius:6px;font-size:14px;transition:all 0.2s ease;outline:none;min-width:0;}
+.form-group input:focus, .form-group select:focus {border-color:#2a5c96;box-shadow:0 0 0 3px rgba(42,92,150,0.1);}
 
-/* 🟢 输入框/按钮居中+美观布局，和列表页统一 */
-.form-box {
-  background:#fff;
-  padding: 40px 24px;
-  border-radius:8px;
-  box-shadow:0 2px 6px rgba(0,0,0,0.05);
-  margin-bottom:20px;
-  text-align: center;
+/* 🔴 同步日期占位符修复 */
+.form-group input[type="date"] {
+  padding: 9px 14px;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  min-height: 42px;
 }
-.form-box input {
-  width: 100%;
-  max-width: 500px;
-  padding: 12px 16px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 16px;
-  margin-bottom: 20px;
-  display: inline-block;
-  outline: none;
-  transition: all 0.2s ease;
+.form-group input[type="date"]::-webkit-datetime-edit {
+  color: transparent !important;
 }
-.form-box input:focus {
-  border-color: #2a5c96;
-  box-shadow: 0 0 0 3px rgba(42,92,150,0.1);
+.form-group input[type="date"]:focus::-webkit-datetime-edit {
+  color: #333 !important;
 }
-.btn-query {
-  width: 200px;
-  height: 48px;
-  background: #2a5c96;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+.form-group input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 1;
+  margin-left: auto;
 }
-.btn-query:hover {
-  background: #234b7a;
-  transform: translateY(-1px);
-}
-.btn-query:active {
-  transform: translateY(0);
+.form-group input[type="date"]::placeholder,
+.form-group input[type="date"]::-webkit-input-placeholder,
+.form-group input[type="date"]::-moz-placeholder {
+  color: transparent !important;
+  opacity: 0 !important;
 }
 
-.result-box {background:#fff;padding:24px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.05);display:none;}
-.asset-info {line-height:2.4;font-size:15px;margin-bottom:28px;padding-bottom:20px;border-bottom:1px solid #e5e7eb;}
-.asset-info p {display:flex;align-items:center;padding:0 8px;margin:0;flex-wrap:nowrap;}
-.asset-info p span:first-child {color:#666;width:140px;text-align:right;padding-right:16px;flex-shrink:0;white-space:nowrap;}
-.asset-info p span:last-child {font-weight:500;color:#333;flex:1;text-align:left;min-width:0;}
-.status-in {color:#07c160;font-weight:600;}
-.status-out {color:#e03131;font-weight:600;}
-.record-list h4 {font-size:16px;color:#333;margin-bottom:16px;padding-left:8px;border-left:4px solid #2a5c96;}
-.record-item {padding:14px;border-radius:6px;background:#fafbfc;margin-bottom:12px;border:1px solid #f1f3f5;}
-.record-item p {font-size:14px;margin-bottom:8px;}
-.record-item p:last-child {margin-bottom:0;}
-.record-item p span {color:#666;margin-right:8px;}
-.empty-tip {text-align:center;color:#999;padding:40px 0;font-size:15px;}
-.loading-tip {text-align:center;color:#666;padding:40px 0;font-size:15px;}
+.btn-submit {width:180px;height:42px;margin:20px auto 0;display:block;background:#2a5c96;color:#fff;border:none;border-radius:6px;font-size:15px;cursor:pointer;transition:all 0.2s ease;}
+.btn-submit:hover {background:#234b7a;transform:translateY(-1px);}
+.btn-submit:active {transform:translateY(0);}
+.table-box {background:#fff;padding:24px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.05);overflow-x:auto;}
+table {width:100%;border-collapse:separate;border-spacing:0;border-radius:6px;overflow:hidden;}
+th, td {border:1px solid #e5e7eb;padding:12px 14px;text-align:center;font-size:14px;white-space:nowrap;}
+th {background:#f8f9fa;font-weight:600;color:#666;}
+tr:hover {background:#fafbfc;}
+.type-in {color:#07c160;font-weight:600;}
+.type-out {color:#e03131;font-weight:600;}
+.btn-delete {background:#e03131;color:#fff;border:none;padding:6px 14px;border-radius:4px;font-size:13px;cursor:pointer;transition:all 0.2s ease;}
+.btn-delete:hover {background:#c92a2a;}
+.flash-success {padding:12px 16px;border-radius:6px;margin-bottom:16px;background:#f0f9ff;color:#07c160;border:1px solid #b7e4c7;animation:fadeIn 0.3s ease;}
+.flash-error {padding:12px 16px;border-radius:6px;margin-bottom:16px;background:#fff5f5;color:#e03131;border:1px solid #ffd9d9;animation:fadeIn 0.3s ease;}
+@keyframes fadeIn {from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
 @media (max-width:768px) {
-  .nav {flex-wrap:wrap;padding:10px;gap:6px;}
+  .form-grid {grid-template-columns:1fr;gap:14px 0;}
+  .form-group label {width:90px;font-size:13px;}
+  .form-group input, .form-group select {padding:8px 12px;font-size:13px;}
+  .nav {padding:10px;gap:6px;}
   .nav a {padding:6px 12px;font-size:13px;flex:1;text-align:center;}
   .nav a.logout {margin-left:0;flex:100%;text-align:right;}
+  .form-box {padding:16px;}
   .header {padding:14px;font-size:20px;}
-  .form-box {padding: 30px 16px;}
-  .form-box input, .btn-query {max-width: 100%;font-size: 15px;}
-  .result-box {padding:20px 16px;}
-  .asset-info {line-height:2;font-size:14px;}
-  .asset-info p span:first-child {width:100px;padding-right:8px;}
-  .record-item {padding:12px;font-size:13px;}
 }
 </style>
 </head>
@@ -93,89 +80,76 @@ body {background:#f8f9fa;line-height:1.4;}
   <div class="header">{{system_name}}</div>
   <div class="nav">
     <a href="/">资产列表</a>
-    <a href="/record">出入记录</a>
-    <a href="/query" class="active">资产查询</a>
+    <a href="/record" class="active">出入记录</a>
+    <a href="/query">资产查询</a>
     <a href="/logout" class="logout">退出登录</a>
   </div>
 
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      {% for msg in messages %}
+        {% if '成功' in msg %}
+          <div class="flash-success" id="flash-tip">{{msg}}</div>
+        {% else %}
+          <div class="flash-error" id="flash-tip">{{msg}}</div>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
   <div class="form-box">
-    <input type="text" id="assetId" placeholder="请输入资产编号进行查询" autocomplete="off">
-    <br>
-    <button class="btn-query" onclick="searchAsset()">查询资产信息</button>
+    <form method="post" action="/do_record">
+      <div class="form-grid">
+        <div class="form-group"><label>资产编号<span>*</span>：</label><input name="asset_id" required></div>
+        <div class="form-group"><label>操作人<span>*</span>：</label><input name="person" required></div>
+        <div class="form-group"><label>操作类型：</label><select name="type"><option value="领用">领用</option><option value="归还">归还</option></select></div>
+        <div class="form-group"><label>操作数量<span>*</span>：</label><input type="number" name="quantity" value="1" min="1" required></div>
+        <div class="form-group"><label>使用用途：</label><input name="purpose"></div>
+        <div class="form-group"><label>经手人：</label><input name="handler"></div>
+      </div>
+      <button type="submit" class="btn-submit">提交记录</button>
+    </form>
   </div>
 
-  <div class="result-box" id="resultBox">
-    <div class="asset-info" id="assetInfo"></div>
-    <div class="record-list" id="recordList"></div>
+  <div class="table-box">
+    <table>
+      <thead>
+        <tr>
+          <th>操作时间</th><th>资产编号</th><th>操作人</th><th>操作类型</th><th>操作数量</th><th>使用用途</th><th>经手人</th><th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for record in records %}
+        <tr>
+          <td>{{record.time}}</td><td>{{record.asset_id}}</td><td>{{record.person}}</td>
+          <td class="{{'type-out' if record.type=='领用' else 'type-in'}}">{{record.type}}</td><td>{{record.quantity}}</td>
+          <td>{{record.purpose or '未填写'}}</td><td>{{record.handler or '未填写'}}</td>
+          <td>
+            <form method="post" action="/delete_record" onsubmit="return confirm('确定删除？删除后库存将自动恢复！')" style="display:inline;">
+              <input type="hidden" name="record_id" value="{{record.id}}">
+              <button type="submit" class="btn-delete">删除</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 </div>
 
 <script>
-const baseUrl = window.location.origin;
-document.getElementById('assetId').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') searchAsset();
+const flashTip = document.getElementById('flash-tip');
+if (flashTip) {
+  setTimeout(() => {
+    flashTip.style.opacity = '0';
+    flashTip.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+    flashTip.style.transform = 'translateY(-10px)';
+    setTimeout(() => flashTip.remove(), 600);
+  }, 3000);
+}
+document.querySelector('input[name="asset_id"]').addEventListener('keydown', (e) => {
   if (e.key === ' ') e.preventDefault();
 });
-
-function searchAsset() {
-  const assetId = document.getElementById("assetId").value.trim();
-  if (!assetId) { alert("请输入有效的资产编号！"); return; }
-  const resultBox = document.getElementById("resultBox");
-  const assetInfo = document.getElementById("assetInfo");
-  const recordList = document.getElementById("recordList");
-  resultBox.style.display = "block";
-  assetInfo.innerHTML = '<div class="loading-tip">正在查询，请稍候...</div>';
-  recordList.innerHTML = "";
-
-  fetch(`${baseUrl}/api/asset`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ asset_id: assetId }),
-    timeout: 5000
-  })
-  .then(res => {
-    if (!res.ok) throw new Error("网络请求失败");
-    return res.json();
-  })
-  .then(data => {
-    if (!data.ok) {
-      assetInfo.innerHTML = '<div class="empty-tip" style="color:#e03131;">未找到该资产，请检查编号！</div>';
-      return;
-    }
-    const asset = data.asset;
-    assetInfo.innerHTML = `
-      <p><span>资产编号：</span><span>${asset.asset_id}</span></p>
-      <p><span>资产名称：</span><span>${asset.name}</span></p>
-      <p><span>设备型号：</span><span>${asset.model || '未填写'}</span></p>
-      <p><span>采购时间：</span><span>${asset.purchase_time}</span></p>
-      <p><span>存放位置：</span><span>${asset.location || '未填写'}</span></p>
-      <p><span>资产总数量：</span><span>${asset.total_quantity}</span></p>
-      <p><span>剩余可领用数量：</span><span>${asset.current_quantity}</span></p>
-      <p><span>当前资产状态：</span><span class="${asset.status=='在库'?'status-in':'status-out'}">${asset.status}</span></p>
-    `;
-    const unreturned = data.unreturned || [];
-    if (unreturned.length === 0) {
-      recordList.innerHTML = '<div class="empty-tip">该资产暂无未归还的领用记录</div>';
-      return;
-    }
-    recordList.innerHTML = '<h4>未归还领用记录</h4>';
-    unreturned.forEach(r => {
-      recordList.innerHTML += `
-        <div class="record-item">
-          <p><span>领用人员：</span>${r.person}</p>
-          <p><span>未归还数量：</span>${r.quantity}</p>
-          <p><span>最新领用时间：</span>${r.time}</p>
-          <p><span>使用用途：</span>${r.purpose || '未填写'}</p>
-        </div>
-      `;
-    });
-  })
-  .catch(err => {
-    assetInfo.innerHTML = `<div class="empty-tip" style="color:#e03131;">${err.message}，请稍后重试！</div>`;
-    console.error("查询错误：", err);
-  });
-}
-
 setInterval(() => { fetch(window.location.origin).catch(err=>{}); }, 600000);
 </script>
 </body>

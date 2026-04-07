@@ -159,102 +159,67 @@ def record():
     return render_template("record.html", records=records, system_name=SYSTEM_NAME)
 
 # ====================== 提交出入记录（核心：移除经手人，保留预计归还时间，兼容旧表）======================
+# ====================== 提交记录（重构：固定标签 + 动态用途）======================
 @app.route("/do_record", methods=["POST"])
 def do_record():
+    if "user" not in session: return redirect("/login")
+    
     form_data = request.form
-    # 基础校验（领用时预计归还天数必填，无经手人）
-    required = ["asset_id", "person", "quantity", "type"]
-    if form_data.get("type") == "领用" and not form_data.get("return_days"):
-        flash("⚠️ 领用时必须填写预计归还天数！")
-        return redirect("/record")
-    for key in required:
-        if not form_data.get(key):
-            flash(f"⚠️ {{'asset_id':'资产编号','person':'领用人','quantity':'数量','type':'操作类型'}}[{key}] 为必填项！")
-            return redirect("/record")
+    asset_id = form_data.get("asset_id")
+    person = form_data.get("person")  # 统一固定的“领用人”字段
+    op_type = form_data.get("type")
+    quantity = int(form_data.get("quantity") or 0)
 
-    asset_id = form_data["asset_id"]
-    person = form_data["person"].strip()
-    op_type = form_data["type"]
-    quantity = int(form_data["quantity"])
-    return_days = int(form_data.get("return_days", 7)) if op_type == "领用" else 0
-    purpose_origin = form_data.get("purpose", "")
+    # 逻辑处理：将归还状态或领用用途统一存入 purpose 字段
+    if op_type == "领用":
+        purpose_val = form_data.get("purpose", "").strip() or "常规领用"
+        days = form_data.get("return_days", "7")
+        # 计算预计归还日期
+        expect_date = (get_beijing_time() + timedelta(days=int(days))).strftime("%Y-%m-%d")
+        final_purpose = f"{purpose_val} | 预计归还:{expect_date}"
+    else:
+        # 归还时接收“return_status”输入框的内容
+        ret_status = form_data.get("return_status", "").strip() or "完好"
+        final_purpose = f"【归还状态】: {ret_status}"
 
     db = get_db()
     try:
         cur = db.cursor()
-        # 1. 检查资产是否存在
-        cur.execute("SELECT * FROM asset_info WHERE asset_id=%s", (asset_id,))
+        # 1. 检查资产
+        cur.execute("SELECT current_quantity, total_quantity FROM asset_info WHERE asset_id=%s", (asset_id,))
         asset = cur.fetchone()
         if not asset:
-            flash("⚠️ 资产不存在！")
+            flash("❌ 错误：未找到资产编号 " + asset_id)
             return redirect("/record")
 
-        current_qty = asset["current_quantity"]
-        total_qty = asset["total_quantity"]
-
-        # 2. 领用/归还逻辑校验（多用户独立，禁止超领/超还）
+        # 2. 库存计算与校验
         if op_type == "领用":
-            # 领用：校验总库存是否充足
-            if current_qty < quantity:
-                flash(f"⚠️ 库存不足！当前剩余 {current_qty} 件，无法领用 {quantity} 件")
+            if asset['current_quantity'] < quantity:
+                flash(f"⚠️ 库存不足！仅剩 {asset['current_quantity']} 件")
                 return redirect("/record")
-            new_qty = current_qty - quantity
-            # 计算预计归还时间
-            expected_return = format_beijing_time(get_beijing_time() + timedelta(days=return_days))
-            # 核心：预计归还时间+用途拼接存入purpose字段（无经手人）
-            purpose_with_return = f"{purpose_origin}|预计归还：{expected_return}" if purpose_origin else f"预计归还：{expected_return}"
+            new_qty = asset['current_quantity'] - quantity
         else:
-            # 归还：校验该用户的未归还数量，禁止超还
-            cur.execute("""
-                SELECT COALESCE(SUM(quantity), 0) as total_borrowed 
-                FROM record_info 
-                WHERE asset_id=%s AND person=%s AND type='领用'
-            """, (asset_id, person))
-            total_borrowed = cur.fetchone()["total_borrowed"]
-
-            cur.execute("""
-                SELECT COALESCE(SUM(quantity), 0) as total_returned 
-                FROM record_info 
-                WHERE asset_id=%s AND person=%s AND type='归还'
-            """, (asset_id, person))
-            total_returned = cur.fetchone()["total_returned"]
-
-            available_return = total_borrowed - total_returned
-            if available_return < quantity:
-                flash(f"⚠️ 您当前仅可归还 {available_return} 件，无法超还")
+            new_qty = asset['current_quantity'] + quantity
+            if new_qty > asset['total_quantity']:
+                flash("⚠️ 错误：归还数量超过总库存")
                 return redirect("/record")
 
-            # 校验归还后总库存不超过资产总数量
-            new_qty = current_qty + quantity
-            if new_qty > total_qty:
-                flash(f"⚠️ 归还后库存({new_qty})超过总数量({total_qty})，无法操作")
-                return redirect("/record")
-            purpose_with_return = purpose_origin  # 归还时无需预计归还时间
-
-        # 3. 更新资产库存和状态
+        # 3. 更新资产状态
         new_status = "借出" if new_qty == 0 else "在库"
-        cur.execute("""
-            UPDATE asset_info 
-            SET current_quantity=%s, status=%s 
-            WHERE asset_id=%s
-        """, (new_qty, new_status, asset_id))
+        cur.execute("UPDATE asset_info SET current_quantity=%s, status=%s WHERE asset_id=%s", 
+                   (new_qty, new_status, asset_id))
 
-        # 4. 插入操作记录（无经手人字段，兼容旧表）
+        # 4. 写入流水记录
         cur.execute("""
-            INSERT INTO record_info (
-                asset_id, person, type, quantity, time, purpose, handler
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, (
-            asset_id, person, op_type, quantity,
-            format_beijing_time(get_beijing_time()),
-            purpose_with_return,  # 含预计归还时间的用途
-            ""  # 经手人字段置空，无输入
-        ))
+            INSERT INTO record_info (asset_id, person, type, quantity, time, purpose)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (asset_id, person, op_type, quantity, format_beijing_time(get_beijing_time()), final_purpose))
+        
         db.commit()
-        flash("✅ 操作成功！")
+        flash(f"✅ {op_type}成功：{asset_id} (数量:{quantity})")
     except Exception as e:
-        print(f"操作记录失败: {e}")
-        flash("❌ 操作失败，请检查数据！")
+        db.rollback()
+        flash(f"❌ 系统错误: {str(e)}")
     finally:
         db.close()
     return redirect("/record")

@@ -62,15 +62,11 @@
             <a href="/logout" class="logout">退出登录</a>
         </div>
         <div class="content">
-            <!-- 查询表单：资产编号/名称模糊查询 + 分类筛选（组合/单独查询均可） -->
+            <!-- 移除编号/名称输入框，仅保留分类筛选查询 -->
             <form class="query-form" id="queryForm">
                 <div class="form-group">
-                    <label>资产编号/名称</label>
-                    <input type="text" id="assetQuery" placeholder="输入编号/名称模糊查询，支持关键词">
-                </div>
-                <div class="form-group">
                     <label>设备分类筛选</label>
-                    <select id="categoryFilter">
+                    <select id="categoryFilter" required>
                         <option value="">全部分类</option>
                         {% for cate in categories %}
                         <option value="{{ cate }}">{{ cate }}</option>
@@ -93,39 +89,25 @@
             "其他类": "category-3"
         };
 
-        // 表单提交核心逻辑
+        // 表单提交核心逻辑（仅按分类查询，禁用编号/名称）
         document.getElementById('queryForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            // 获取查询参数
-            const queryStr = document.getElementById('assetQuery').value.trim();
+            // 仅获取分类参数，移除编号/名称相关逻辑
             const category = document.getElementById('categoryFilter').value;
             const resultArea = document.getElementById('resultArea');
 
             // 清空历史查询结果
             resultArea.innerHTML = '';
 
-            // 拆分编号/名称（兼容「编号-名称」格式输入，也支持纯关键词模糊查）
-            let assetId = '';
-            let assetName = '';
-            if (queryStr.includes('-')) {
-                const [idPart, namePart] = queryStr.split('-', 2);
-                assetId = idPart.trim();
-                assetName = namePart.trim();
-            } else {
-                // 纯输入内容：既当编号查，也当名称模糊查，提升查询命中率
-                assetId = queryStr;
-                assetName = queryStr;
-            }
-
-            // 发送AJAX查询请求
+            // 发送AJAX查询请求（仅传分类）
             fetch('/api/asset', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    asset_id: assetId,
-                    asset_name: assetName,
+                    asset_id: "",  // 空值，禁用编号查询
+                    asset_name: "", // 空值，禁用名称查询
                     category: category
                 })
             })
@@ -145,7 +127,7 @@
                     const cateClass = cateClassMap[asset.category] || 'category-3';
                     const statusClass = asset.status === '在库' ? 'status-in' : 'status-out';
 
-                    // 资产基础信息卡片（彻底移除资产ID相关展示）
+                    // 资产基础信息卡片
                     html += `
                     <div class="result-card">
                         <h3>
@@ -163,7 +145,7 @@
                         </div>
                     `;
 
-                    // 未归还记录展示（操作人替代原领用人，标红提醒）
+                    // 未归还记录展示（操作人，标红提醒）
                     if (unreturned.length > 0) {
                         html += `
                             <div class="unreturned-title">⚠️ 未归还记录</div>

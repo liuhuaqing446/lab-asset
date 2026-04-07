@@ -26,7 +26,7 @@ SOURCES = ["自购", "企业", "学校"]
 DEFAULT_RETURN_DAYS = 1
 
 app = Flask(__name__)
-app.secret_key = "lab_asset_2026_secure_v3"
+app.secret_key = "lab_asset_2026_secure_v4"
 
 # ====================== 基础工具函数 ======================
 # 健康检查接口（配合UptimeRobot防休眠）
@@ -71,7 +71,7 @@ def logout():
     session.clear()
     return redirect("/login")
 
-# ====================== 资产列表（首页，状态高亮+移除占位符）======================
+# ====================== 资产列表（首页，状态字体高亮+移除占位符）======================
 @app.route("/")
 def index():
     db = get_db()
@@ -143,20 +143,20 @@ def delete_asset():
         db.close()
     return redirect("/")
 
-# ====================== 出入记录页（支持资产名称查询）======================
+# ====================== 出入记录页（支持资产名称查询+自动补全）======================
 @app.route("/record")
 def record():
     db = get_db()
     cur = db.cursor()
     # 获取所有资产，用于前端名称自动补全
-    cur.execute("SELECT asset_id, name FROM asset_info ORDER BY name")
+    cur.execute("SELECT asset_id, name, model FROM asset_info ORDER BY name")
     assets = cur.fetchall()
     cur.execute("SELECT * FROM record_info ORDER BY time DESC")
     records = cur.fetchall()
     db.close()
     return render_template("record.html", records=records, system_name=SYSTEM_NAME, assets=assets)
 
-# ====================== 提交出入记录（核心：默认1天/归还状态/名称匹配）======================
+# ====================== 提交出入记录（核心：修复直接输入报错+默认1天/归还状态）======================
 @app.route("/do_record", methods=["POST"])
 def do_record():
     form_data = request.form
@@ -304,38 +304,34 @@ def delete_record():
 def query():
     return render_template("query.html", system_name=SYSTEM_NAME, categories=CATEGORIES)
 
-# ====================== 资产查询API（核心：名称模糊查询+移除资产ID）======================
+# ====================== 资产查询API（核心：修复查询逻辑+名称模糊查询）======================
 @app.route("/api/asset", methods=["POST"])
 def api_asset():
     req_data = request.json
-    asset_id = req_data.get("asset_id")
-    asset_name = req_data.get("asset_name", "")  # 新增：名称模糊查询
-    cate_filter = req_data.get("category", "")
+    asset_id = req_data.get("asset_id", "").strip()
+    asset_name = req_data.get("asset_name", "").strip()
+    cate_filter = req_data.get("category", "").strip()
 
     db = get_db()
     cur = db.cursor()
 
-    # 多条件查询：编号/名称/分类
-    if asset_id and asset_name and cate_filter:
-        cur.execute("SELECT * FROM asset_info WHERE asset_id=%s AND name LIKE %s AND (model LIKE %s OR model LIKE %s)", 
-                    (asset_id, f"%{asset_name}%", f"%|{cate_filter}-%", f"{cate_filter}-%"))
-    elif asset_id and asset_name:
-        cur.execute("SELECT * FROM asset_info WHERE asset_id=%s AND name LIKE %s", (asset_id, f"%{asset_name}%"))
-    elif asset_id and cate_filter:
-        cur.execute("SELECT * FROM asset_info WHERE asset_id=%s AND (model LIKE %s OR model LIKE %s)", 
-                    (asset_id, f"%|{cate_filter}-%", f"{cate_filter}-%"))
-    elif asset_name and cate_filter:
-        cur.execute("SELECT * FROM asset_info WHERE name LIKE %s AND (model LIKE %s OR model LIKE %s)", 
-                    (f"%{asset_name}%", f"%|{cate_filter}-%", f"{cate_filter}-%"))
-    elif asset_id:
-        cur.execute("SELECT * FROM asset_info WHERE asset_id=%s", (asset_id,))
-    elif asset_name:
-        cur.execute("SELECT * FROM asset_info WHERE name LIKE %s", (f"%{asset_name}%",))
-    elif cate_filter:
-        cur.execute("SELECT * FROM asset_info WHERE model LIKE %s OR model LIKE %s", (f"%|{cate_filter}-%", f"{cate_filter}-%"))
-    else:
-        db.close()
-        return jsonify(ok=False, msg="请输入资产编号/名称或选择分类进行查询")
+    # 多条件查询：编号/名称/分类（修复查询逻辑，支持单独/组合查询）
+    query_sql = "SELECT * FROM asset_info WHERE 1=1"
+    params = []
+
+    if asset_id:
+        query_sql += " AND asset_id = %s"
+        params.append(asset_id)
+    if asset_name:
+        query_sql += " AND name LIKE %s"
+        params.append(f"%{asset_name}%")
+    if cate_filter:
+        query_sql += " AND (model LIKE %s OR model LIKE %s)"
+        params.append(f"%|{cate_filter}-%")
+        params.append(f"{cate_filter}-%")
+
+    query_sql += " ORDER BY asset_id"
+    cur.execute(query_sql, params)
 
     assets = cur.fetchall()
     if not assets:

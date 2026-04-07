@@ -1,157 +1,180 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0,user-scalable=no">
-<title>{{system_name}}</title>
-<style>
-* {box-sizing:border-box;margin:0;padding:0;font-family:system-ui, "Microsoft YaHei", sans-serif;}
-body {background:#f8f9fa;line-height:1.4;}
-.container {max-width:1200px;margin:0 auto;padding:16px;}
-.header {background:#2a5c96;color:#fff;padding:18px;text-align:center;font-size:24px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,0.08);margin-bottom:20px;border-radius:8px;}
-.nav {background:#fff;padding:12px 16px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.05);margin-bottom:20px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
-.nav a {padding:8px 18px;border-radius:6px;text-decoration:none;color:#333;font-size:14px;transition:all 0.2s ease;white-space:nowrap;}
-.nav a.active {background:#2a5c96;color:#fff;font-weight:600;}
-.nav a:hover:not(.active):not(.logout) {background:#f5f7fa;color:#2a5c96;}
-.nav a.logout {margin-left:auto;color:#666;padding:8px 0;white-space:nowrap;}
-.nav a.logout:hover {color:#2a5c96;background:transparent;}
-.form-box {background:#fff;padding:24px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.05);margin-bottom:20px;}
-.form-grid {display:grid;grid-template-columns:1fr 1fr;gap:18px 24px;}
-.form-group {display:flex;align-items:center;gap:8px;flex-wrap:nowrap;}
-.form-group label {width:110px;text-align:right;font-size:14px;color:#666;flex-shrink:0;white-space:nowrap;}
-.form-group label span {color:#e03131;}
-.form-group input {flex:1;padding:10px 14px;border:1px solid #e5e7eb;border-radius:6px;font-size:14px;transition:all 0.2s ease;outline:none;min-width:0;}
-.form-group input:focus {border-color:#2a5c96;box-shadow:0 0 0 3px rgba(42,92,150,0.1);}
-
-/* 🔴 终极方案：彻底移除日期占位符，覆盖所有浏览器 */
-.form-group input[type="date"] {
-  padding: 9px 14px;
-  appearance: none !important;
-  -webkit-appearance: none !important;
-  -moz-appearance: none !important;
-  min-height: 42px;
-}
-/* 强制隐藏所有占位符/提示文字 */
-.form-group input[type="date"]::-webkit-datetime-edit {
-  color: transparent !important;
-}
-.form-group input[type="date"]:focus::-webkit-datetime-edit {
-  color: #333 !important;
-}
-.form-group input[type="date"]::-webkit-calendar-picker-indicator {
-  opacity: 1;
-  margin-left: auto;
-}
-.form-group input[type="date"]::placeholder,
-.form-group input[type="date"]::-webkit-input-placeholder,
-.form-group input[type="date"]::-moz-placeholder {
-  color: transparent !important;
-  opacity: 0 !important;
-}
-
-.btn-add {width:180px;height:42px;margin:20px auto 0;display:block;background:#2a5c96;color:#fff;border:none;border-radius:6px;font-size:15px;cursor:pointer;transition:all 0.2s ease;}
-.btn-add:hover {background:#234b7a;transform:translateY(-1px);}
-.btn-add:active {transform:translateY(0);}
-.table-box {background:#fff;padding:24px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.05);overflow-x:auto;}
-table {width:100%;border-collapse:separate;border-spacing:0;border-radius:6px;overflow:hidden;}
-th, td {border:1px solid #e5e7eb;padding:12px 14px;text-align:center;font-size:14px;white-space:nowrap;}
-th {background:#f8f9fa;font-weight:600;color:#666;}
-tr:hover {background:#fafbfc;}
-.status-in {color:#07c160;font-weight:600;}
-.status-out {color:#e03131;font-weight:600;}
-.btn-delete {background:#e03131;color:#fff;border:none;padding:6px 14px;border-radius:4px;font-size:13px;cursor:pointer;transition:all 0.2s ease;}
-.btn-delete:hover {background:#c92a2a;}
-.flash-success {padding:12px 16px;border-radius:6px;margin-bottom:16px;background:#f0f9ff;color:#07c160;border:1px solid #b7e4c7;animation:fadeIn 0.3s ease;}
-.flash-error {padding:12px 16px;border-radius:6px;margin-bottom:16px;background:#fff5f5;color:#e03131;border:1px solid #ffd9d9;animation:fadeIn 0.3s ease;}
-@keyframes fadeIn {from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
-@media (max-width:768px) {
-  .form-grid {grid-template-columns:1fr;gap:14px 0;}
-  .form-group label {width:90px;font-size:13px;}
-  .form-group input {padding:8px 12px;font-size:13px;}
-  .nav {padding:10px;gap:6px;}
-  .nav a {padding:6px 12px;font-size:13px;flex:1;text-align:center;}
-  .nav a.logout {margin-left:0;flex:100%;text-align:right;}
-  .form-box {padding:16px;}
-  .header {padding:14px;font-size:20px;}
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ system_name }} - 资产列表</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Microsoft YaHei", sans-serif; }
+        body { background-color: #f5f7fa; padding: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header { background: #2980b9; color: #fff; padding: 20px 30px; border-radius: 12px 12px 0 0; text-align: center; }
+        .header h1 { font-size: 28px; font-weight: 600; }
+        .nav { background: #fff; padding: 15px 30px; border-bottom: 1px solid #e1e8ed; display: flex; gap: 30px; align-items: center; }
+        .nav a { text-decoration: none; color: #2c3e50; font-size: 16px; font-weight: 500; padding: 8px 0; border-bottom: 2px solid transparent; transition: all 0.3s; }
+        .nav a.active { color: #2980b9; border-bottom-color: #2980b9; }
+        .nav .logout { margin-left: auto; color: #e74c3c; }
+        .content { background: #fff; padding: 30px; border-radius: 0 0 12px 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.05); }
+        .flash-message { padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; }
+        .flash-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .flash-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; }
+        .form-group { display: flex; flex-direction: column; gap: 8px; }
+        .form-group label { color: #34495e; font-size: 15px; font-weight: 500; }
+        .form-group input, .form-group select { padding: 12px 16px; border: 1px solid #e1e8ed; border-radius: 8px; font-size: 15px; transition: border-color 0.3s; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #2980b9; box-shadow: 0 0 0 3px rgba(41,128,185,0.1); }
+        .btn-submit { grid-column: 1 / -1; justify-self: center; padding: 14px 40px; background: #2980b9; color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background-color 0.3s; }
+        .btn-submit:hover { background: #1a5276; }
+        .asset-table { width: 100%; border-collapse: collapse; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 8px rgba(0,0,0,0.05); }
+        .asset-table thead { background: #f8f9fa; }
+        .asset-table th { padding: 14px 12px; text-align: center; color: #495057; font-weight: 600; font-size: 15px; border-bottom: 2px solid #e9ecef; }
+        .asset-table td { padding: 14px 12px; text-align: center; color: #2c3e50; font-size: 14px; border-bottom: 1px solid #e9ecef; }
+        .asset-table tbody tr:hover { background: #f8f9fa; }
+        .status-in { color: #27ae60; font-weight: 600; }
+        .status-out { color: #e74c3c; font-weight: 600; }
+        .category-tag { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: #fff; }
+        .category-1 { background: #3498db; } /* 机械类 */
+        .category-2 { background: #e67e22; } /* 电气类 */
+        .category-3 { background: #7f8c8d; } /* 其他类 */
+        .source-tag { color: #2980b9; font-weight: 500; }
+        .btn-delete { padding: 8px 16px; background: #e74c3c; color: #fff; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; transition: background-color 0.3s; }
+        .btn-delete:hover { background: #c0392b; }
+        @media (max-width: 992px) { .form-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 768px) { .form-grid { grid-template-columns: 1fr; } .asset-table { display: block; overflow-x: auto; } }
+    </style>
 </head>
 <body>
-<div class="container">
-  <div class="header">{{system_name}}</div>
-  <div class="nav">
-    <a href="/" class="active">资产列表</a>
-    <a href="/record">出入记录</a>
-    <a href="/query">资产查询</a>
-    <a href="/logout" class="logout">退出登录</a>
-  </div>
+    <div class="container">
+        <div class="header">
+            <h1>{{ system_name }}</h1>
+        </div>
+        <div class="nav">
+            <a href="/" class="active">资产列表</a>
+            <a href="/record">出入记录</a>
+            <a href="/query">资产查询</a>
+            <a href="/logout" class="logout">退出登录</a>
+        </div>
+        <div class="content">
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <div class="flash-message {{ 'flash-success' if '成功' in messages[0] else 'flash-error' }}">
+                        {{ messages[0] }}
+                    </div>
+                {% endif %}
+            {% endwith %}
 
-  {% with messages = get_flashed_messages() %}
-    {% if messages %}
-      {% for msg in messages %}
-        {% if '成功' in msg %}
-          <div class="flash-success" id="flash-tip">{{msg}}</div>
-        {% else %}
-          <div class="flash-error" id="flash-tip">{{msg}}</div>
-        {% endif %}
-      {% endfor %}
-    {% endif %}
-  {% endwith %}
-
-  <div class="form-box">
-    <form method="post" action="/add_asset">
-      <div class="form-grid">
-        <div class="form-group"><label>资产编号<span>*</span>：</label><input name="asset_id" required></div>
-        <div class="form-group"><label>资产名称<span>*</span>：</label><input name="name" required></div>
-        <div class="form-group"><label>设备型号：</label><input name="model"></div>
-        <div class="form-group"><label>采购时间：</label><input type="date" name="purchase_time"></div>
-        <div class="form-group"><label>存放位置：</label><input name="location"></div>
-        <div class="form-group"><label>总数量<span>*</span>：</label><input type="number" name="total_quantity" value="1" min="1"></div>
-      </div>
-      <button type="submit" class="btn-add">新增资产</button>
-    </form>
-  </div>
-
-  <div class="table-box">
-    <table>
-      <thead>
-        <tr>
-          <th>资产编号</th><th>资产名称</th><th>设备型号</th><th>采购时间</th><th>存放位置</th><th>总数量</th><th>剩余数量</th><th>当前状态</th><th>操作</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for asset in assets %}
-        <tr>
-          <td>{{asset.asset_id}}</td><td>{{asset.name}}</td><td>{{asset.model or '未填写'}}</td>
-          <td>{{asset.purchase_time}}</td><td>{{asset.location or '未填写'}}</td><td>{{asset.total_quantity}}</td>
-          <td>{{asset.current_quantity}}</td><td class="{{'status-in' if asset.status=='在库' else 'status-out'}}">{{asset.status}}</td>
-          <td>
-            <form method="post" action="/delete_asset" onsubmit="return confirm('确定删除该资产及所有关联记录？')" style="display:inline;">
-              <input type="hidden" name="asset_id" value="{{asset.asset_id}}">
-              <button type="submit" class="btn-delete">删除</button>
+            <!-- 资产录入表单（3类分类/3类来源，无经手人） -->
+            <form method="post" action="/add_asset">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>资产编号*</label>
+                        <input type="text" name="asset_id" required placeholder="请输入资产编号">
+                    </div>
+                    <div class="form-group">
+                        <label>资产名称*</label>
+                        <input type="text" name="name" required placeholder="请输入资产名称">
+                    </div>
+                    <div class="form-group">
+                        <label>设备型号</label>
+                        <input type="text" name="model" placeholder="请输入设备型号">
+                    </div>
+                    <div class="form-group">
+                        <label>设备分类*</label>
+                        <select name="category" required>
+                            <option value="">请选择设备分类</option>
+                            {% for cate in categories %}
+                            <option value="{{ cate }}">{{ cate }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>设备来源*</label>
+                        <select name="source" required>
+                            <option value="">请选择设备来源</option>
+                            {% for src in sources %}
+                            <option value="{{ src }}">{{ src }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>采购时间</label>
+                        <input type="date" name="purchase_time">
+                    </div>
+                    <div class="form-group">
+                        <label>存放位置</label>
+                        <input type="text" name="location" placeholder="请输入存放位置">
+                    </div>
+                    <div class="form-group">
+                        <label>总数量*</label>
+                        <input type="number" name="total_quantity" value="1" min="1" required>
+                    </div>
+                    <div class="form-group"></div> <!-- 占位符，保持布局整齐 -->
+                    <button type="submit" class="btn-submit">新增资产</button>
+                </div>
             </form>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</div>
 
-<script>
-const flashTip = document.getElementById('flash-tip');
-if (flashTip) {
-  setTimeout(() => {
-    flashTip.style.opacity = '0';
-    flashTip.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-    flashTip.style.transform = 'translateY(-10px)';
-    setTimeout(() => flashTip.remove(), 600);
-  }, 3000);
-}
-document.querySelector('input[name="asset_id"]').addEventListener('keydown', (e) => {
-  if (e.key === ' ') e.preventDefault();
-});
-setInterval(() => { fetch(window.location.origin).catch(err=>{}); }, 600000);
-</script>
+            <!-- 资产列表（3类分类/3类来源，无经手人列） -->
+            <table class="asset-table">
+                <thead>
+                    <tr>
+                        <th>资产编号</th>
+                        <th>资产名称</th>
+                        <th>设备型号</th>
+                        <th>设备分类</th>
+                        <th>设备来源</th>
+                        <th>采购时间</th>
+                        <th>存放位置</th>
+                        <th>总数量</th>
+                        <th>剩余数量</th>
+                        <th>当前状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for asset in assets %}
+                    {% set model_str = asset.model or '' %}
+                    {% set cate = '未分类' %}
+                    {% set src = '未知来源' %}
+                    {% set model_origin = model_str %}
+                    {# 解析3类分类/3类来源 #}
+                    {% if '|' in model_str %}
+                        {% set parts = model_str.split('|', 1) %}
+                        {% set model_origin = parts[0] %}
+                        {% if '-' in parts[1] %}
+                            {% set ext_parts = parts[1].split('-', 1) %}
+                            {% set cate = ext_parts[0] %}
+                            {% set src = ext_parts[1] %}
+                        {% endif %}
+                    {% elif '-' in model_str %}
+                        {% set ext_parts = model_str.split('-', 1) %}
+                        {% set cate = ext_parts[0] %}
+                        {% set src = ext_parts[1] %}
+                        {% set model_origin = '无' %}
+                    {% endif %}
+                    {# 分类标签样式（3类对应3种颜色） #}
+                    {% set cate_class = 'category-1' if cate == '机械类' else 'category-2' if cate == '电气类' else 'category-3' %}
+                    <tr>
+                        <td>{{ asset.asset_id }}</td>
+                        <td>{{ asset.name }}</td>
+                        <td>{{ model_origin or '无' }}</td>
+                        <td><span class="category-tag {{ cate_class }}">{{ cate }}</span></td>
+                        <td><span class="source-tag">{{ src }}</span></td>
+                        <td>{{ asset.purchase_time or '未填写' }}</td>
+                        <td>{{ asset.location or '未填写' }}</td>
+                        <td>{{ asset.total_quantity }}</td>
+                        <td>{{ asset.current_quantity }}</td>
+                        <td class="{{ 'status-out' if asset.status == '借出' else 'status-in' }}">{{ asset.status }}</td>
+                        <td>
+                            <form method="post" action="/delete_asset" onsubmit="return confirm('确定删除该资产及所有关联记录？')" style="display:inline;">
+                                <input type="hidden" name="asset_id" value="{{ asset.asset_id }}">
+                                <button class="btn-delete">删除</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </body>
 </html>

@@ -15,7 +15,7 @@
         .nav a.active { color: #2980b9; border-bottom-color: #2980b9; }
         .nav .logout { margin-left: auto; color: #e74c3c; }
         .content { background: #fff; padding: 20px; border-radius: 0 0 12px 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.05); }
-        .flash-message { padding: 10px 14px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; }
+        .flash-message { padding: 10px 14px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; transition: opacity 0.5s; }
         .flash-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .flash-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         .form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; }
@@ -25,6 +25,8 @@
         .form-group input:focus, .form-group select:focus { outline: none; border-color: #2980b9; box-shadow: 0 0 0 3px rgba(41,128,185,0.1); }
         /* 移除采购时间占位符，美化输入框 */
         .form-group input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
+        .form-group input[type="date"] { position: relative; }
+        .form-group input[type="date"]::-webkit-datetime-edit { padding: 0; }
         .btn-submit { grid-column: 1 / -1; justify-self: center; padding: 12px 35px; background: #2980b9; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background-color 0.3s; }
         .btn-submit:hover { background: #1a5276; }
         .asset-table { width: 100%; border-collapse: collapse; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 8px rgba(0,0,0,0.05); }
@@ -32,9 +34,9 @@
         .asset-table th { padding: 12px 10px; text-align: center; color: #495057; font-weight: 600; font-size: 14px; border-bottom: 2px solid #e9ecef; }
         .asset-table td { padding: 12px 10px; text-align: center; color: #2c3e50; font-size: 14px; border-bottom: 1px solid #e9ecef; }
         .asset-table tbody tr:hover { background: #f8f9fa; }
-        /* 状态高亮：在库绿色，借出红色 */
-        .status-in { color: #27ae60; font-weight: 700; background: #d4edda; padding: 4px 8px; border-radius: 4px; }
-        .status-out { color: #e74c3c; font-weight: 700; background: #f8d7da; padding: 4px 8px; border-radius: 4px; }
+        /* 状态字体高亮：在库绿色，借出红色（移除背景色） */
+        .status-in { color: #27ae60; font-weight: 700; }
+        .status-out { color: #e74c3c; font-weight: 700; }
         .category-tag { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: #fff; }
         .category-1 { background: #3498db; } /* 机械类 */
         .category-2 { background: #e67e22; } /* 电气类 */
@@ -65,7 +67,7 @@
         <div class="content">
             {% with messages = get_flashed_messages() %}
                 {% if messages %}
-                    <div class="flash-message {{ 'flash-success' if '成功' in messages[0] else 'flash-error' }}">
+                    <div class="flash-message {{ 'flash-success' if '成功' in messages[0] else 'flash-error' }}" id="flashMsg">
                         {{ messages[0] }}
                     </div>
                 {% endif %}
@@ -105,7 +107,7 @@
                     </div>
                     <div class="form-group">
                         <label>采购时间</label>
-                        <!-- 移除占位符，美化输入框 -->
+                        <!-- 彻底移除占位符 -->
                         <input type="date" name="purchase_time">
                     </div>
                     <div class="form-group">
@@ -168,7 +170,7 @@
                         <td>{{ asset.location or '未填写' }}</td>
                         <td>{{ asset.total_quantity }}</td>
                         <td>{{ asset.current_quantity }}</td>
-                        <!-- 状态高亮：在库绿色，借出红色 -->
+                        <!-- 状态字体高亮：在库绿色，借出红色 -->
                         <td class="{{ 'status-out' if asset.status == '借出' else 'status-in' }}">{{ asset.status }}</td>
                         <td>
                             <form method="post" action="/delete_asset" onsubmit="return confirm('确定删除该资产及所有关联记录？')" style="display:inline;">
@@ -182,5 +184,18 @@
             </table>
         </div>
     </div>
+
+    <script>
+        // 提示框自动消失（1.5秒后淡出）
+        const flashMsg = document.getElementById('flashMsg');
+        if (flashMsg) {
+            setTimeout(() => {
+                flashMsg.style.opacity = '0';
+                setTimeout(() => {
+                    flashMsg.style.display = 'none';
+                }, 500);
+            }, 1500);
+        }
+    </script>
 </body>
 </html>

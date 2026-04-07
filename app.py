@@ -3,7 +3,7 @@ import pymysql
 import datetime
 import os
 
-# 数据库配置（直接用你给的阿里云RDS信息，硬编码保证部署成功）
+# 数据库配置（完全用你给的阿里云RDS信息）
 DB_CONFIG = {
     "host": "rm-bp1084h4bg6153o8veo.mysql.rds.aliyuncs.com",
     "port": 60030,
@@ -35,7 +35,7 @@ def check_login():
     if not session.get("login"):
         return redirect("/login")
 
-# 获取北京时间
+# 获取北京时间（UTC+8）
 def get_beijing_time():
     return datetime.datetime.utcnow() + datetime.timedelta(hours=8)
 
@@ -43,7 +43,9 @@ def get_beijing_time():
 def get_db():
     return pymysql.connect(**DB_CONFIG)
 
+# ==============================================
 # 登录页
+# ==============================================
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -61,17 +63,25 @@ def logout():
     session.clear()
     return redirect("/login")
 
-# 资产列表
+# ==============================================
+# 资产列表（用你原来的 asset_info 表）
+# ==============================================
 @app.route("/")
 def index():
     db = get_db()
-    cursor = db.cursor()
-    cursor.execute("SELECT * FROM assets ORDER BY asset_id DESC")
+    cursor = db.cursor(pymysql.cursors.DictCursor)
+    # 兼容旧表：如果旧表没有 category/source 字段，自动补空
+    cursor.execute("""
+    SELECT asset_id, name, model, purchase_time, location, 
+           total_quantity, current_quantity, status,
+           COALESCE(category, '') as category, COALESCE(source, '') as source
+    FROM asset_info ORDER BY asset_id DESC
+    """)
     assets = cursor.fetchall()
     db.close()
     return render_template("index.html", assets=assets, system_name=SYSTEM_NAME)
 
-# 录入资产
+# 录入资产（兼容旧表，新增 category/source 字段）
 @app.route('/add_asset', methods=['POST'])
 def add_asset():
     asset_id = request.form['asset_id']
@@ -86,16 +96,16 @@ def add_asset():
     db = get_db()
     cursor = db.cursor()
     # 检查资产编号是否已存在
-    cursor.execute("SELECT asset_id FROM assets WHERE asset_id = %s", (asset_id,))
+    cursor.execute("SELECT asset_id FROM asset_info WHERE asset_id = %s", (asset_id,))
     if cursor.fetchone():
         flash("资产编号已存在！")
         db.close()
         return redirect('/')
 
-    # 插入新资产
+    # 插入新资产（兼容旧表，新增字段允许为空）
     sql = """
-    INSERT INTO assets (asset_id, name, model, purchase_time, location, 
-                        total_quantity, current_quantity, status, category, source)
+    INSERT INTO asset_info (asset_id, name, model, purchase_time, location, 
+                            total_quantity, current_quantity, status, category, source)
     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """
     cursor.execute(sql, (
@@ -113,26 +123,34 @@ def delete_asset():
     asset_id = request.form['asset_id']
     db = get_db()
     cursor = db.cursor()
-    cursor.execute("DELETE FROM records WHERE asset_id = %s", (asset_id,))
-    cursor.execute("DELETE FROM assets WHERE asset_id = %s", (asset_id,))
+    cursor.execute("DELETE FROM record_info WHERE asset_id = %s", (asset_id,))
+    cursor.execute("DELETE FROM asset_info WHERE asset_id = %s", (asset_id,))
     db.commit()
     db.close()
     flash("删除成功！")
     return redirect('/')
 
-# 出入记录
+# ==============================================
+# 出入记录（用你原来的 record_info 表）
+# ==============================================
 @app.route('/record')
 def record():
     db = get_db()
     cursor = db.cursor(pymysql.cursors.DictCursor)
-    cursor.execute("SELECT * FROM assets ORDER BY asset_id DESC")
+    cursor.execute("SELECT * FROM asset_info ORDER BY asset_id DESC")
     assets = cursor.fetchall()
-    cursor.execute("SELECT * FROM records ORDER BY time DESC")
+    # 兼容旧表，新增 expected_return_time/return_status 字段
+    cursor.execute("""
+    SELECT id, asset_id, person, type, quantity, time, purpose, handler,
+           COALESCE(expected_return_time, '') as expected_return_time,
+           COALESCE(return_status, '') as return_status
+    FROM record_info ORDER BY time DESC
+    """)
     records = cursor.fetchall()
     db.close()
     return render_template('record.html', assets=assets, records=records, system_name=SYSTEM_NAME)
 
-# 提交出入记录
+# 提交出入记录（兼容旧表，新增预计归还时间/归还状态）
 @app.route('/do_record', methods=['POST'])
 def do_record():
     asset_id = request.form['asset_id']
@@ -157,7 +175,7 @@ def do_record():
     db = get_db()
     cursor = db.cursor(pymysql.cursors.DictCursor)
     # 检查资产是否存在
-    cursor.execute("SELECT * FROM assets WHERE asset_id = %s", (asset_id,))
+    cursor.execute("SELECT * FROM asset_info WHERE asset_id = %s", (asset_id,))
     asset = cursor.fetchone()
     if not asset:
         flash("资产不存在！")
@@ -174,12 +192,12 @@ def do_record():
     # 更新库存
     new_current = current_quantity - quantity if type == '领用' else current_quantity + quantity
     status = '在库' if new_current > 0 else '借出'
-    cursor.execute("UPDATE assets SET current_quantity = %s, status = %s WHERE asset_id = %s",
+    cursor.execute("UPDATE asset_info SET current_quantity = %s, status = %s WHERE asset_id = %s",
                    (new_current, status, asset_id))
 
-    # 插入记录
+    # 插入记录（兼容旧表，新增字段）
     sql = """
-    INSERT INTO records (asset_id, person, type, quantity, time, purpose, handler, expected_return_time, return_status)
+    INSERT INTO record_info (asset_id, person, type, quantity, time, purpose, handler, expected_return_time, return_status)
     VALUES (%s, %s, %s, %s, NOW(), %s, %s, %s, %s)
     """
     cursor.execute(sql, (
@@ -196,18 +214,19 @@ def delete_record():
     record_id = request.form['record_id']
     db = get_db()
     cursor = db.cursor()
-    cursor.execute("DELETE FROM records WHERE id = %s", (record_id,))
+    cursor.execute("DELETE FROM record_info WHERE id = %s", (record_id,))
     db.commit()
     db.close()
     flash("记录已删除")
     return redirect('/record')
 
-# 资产查询页
+# ==============================================
+# 资产查询（支持编号/名称+分类筛选，兼容旧表）
+# ==============================================
 @app.route('/query')
 def query():
     return render_template('query.html', system_name=SYSTEM_NAME)
 
-# 资产查询API（支持编号/名称+分类筛选）
 @app.route('/api/asset', methods=['POST'])
 def api_asset():
     query = request.json.get('query', '')
@@ -219,7 +238,7 @@ def api_asset():
     sql = """
     SELECT asset_id, name, model, category, source, purchase_time, location,
            total_quantity, current_quantity, status
-    FROM assets WHERE 1=1
+    FROM asset_info WHERE 1=1
     """
     params = []
 
@@ -239,7 +258,7 @@ def api_asset():
     for a in assets:
         cursor.execute("""
         SELECT person, quantity, time, purpose, expected_return_time
-        FROM records WHERE asset_id = %s AND type = '领用' AND quantity > 0
+        FROM record_info WHERE asset_id = %s AND type = '领用' AND quantity > 0
         """, (a['asset_id'],))
         unreturned = cursor.fetchall()
         result.append({
@@ -251,4 +270,4 @@ def api_asset():
     return jsonify({"ok": True, "assets": result})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=False)

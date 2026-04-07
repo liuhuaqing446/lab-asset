@@ -1,45 +1,48 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0,user-scalable=no">
-<title>{{system_name}}</title>
-<style>
-* {box-sizing:border-box;margin:0;padding:0;font-family:system-ui, "Microsoft YaHei", sans-serif;}
-body {background:#f8f9fa;display:flex;align-items:center;justify-content:center;height:100vh;padding:20px;}
-.login-box {background:#fff;width:100%;max-width:420px;padding:40px 32px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.06);transition:all 0.3s ease;}
-.login-box:hover {box-shadow:0 6px 25px rgba(0,0,0,0.08);}
-.login-box h2 {text-align:center;color:#333;font-size:24px;font-weight:600;margin-bottom:32px;}
-.login-input {width:100%;padding:14px 18px;margin-bottom:24px;border:1px solid #e5e7eb;border-radius:8px;font-size:15px;transition:all 0.2s ease;outline:none;}
-.login-input:focus {border-color:#2a5c96;box-shadow:0 0 0 3px rgba(42,92,150,0.1);}
-.login-btn {width:100%;height:48px;background:#2a5c96;color:#fff;border:none;border-radius:8px;font-size:16px;cursor:pointer;transition:all 0.2s ease;margin-bottom:16px;}
-.login-btn:hover {background:#234b7a;transform:translateY(-1px);}
-.login-btn:active {transform:translateY(0);}
-.flash-error {padding:12px 16px;border-radius:6px;margin-bottom:24px;background:#fff5f5;color:#e03131;border:1px solid #ffd9d9;text-align:center;font-size:14px;animation:fadeIn 0.3s ease;}
-@keyframes fadeIn {from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
-@media (max-width:480px) {
-  .login-box {padding:30px 24px;}
-  .login-box h2 {font-size:20px;margin-bottom:24px;}
-  .login-input {padding:12px 16px;font-size:14px;margin-bottom:20px;}
-  .login-btn {height:44px;font-size:15px;}
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ system_name }} - 登录</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Microsoft YaHei", sans-serif; }
+        body { background-color: #f5f7fa; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .login-container { background: #fff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); width: 100%; max-width: 420px; padding: 40px 30px; }
+        .login-header { text-align: center; margin-bottom: 30px; }
+        .login-header h1 { color: #2c3e50; font-size: 26px; font-weight: 600; }
+        .login-header p { color: #7f8c8d; font-size: 14px; margin-top: 8px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; color: #34495e; font-size: 14px; font-weight: 500; margin-bottom: 8px; }
+        .form-group input { width: 100%; padding: 12px 16px; border: 1px solid #e1e8ed; border-radius: 8px; font-size: 15px; transition: border-color 0.3s; }
+        .form-group input:focus { outline: none; border-color: #3498db; box-shadow: 0 0 0 3px rgba(52,152,219,0.1); }
+        .btn-login { width: 100%; padding: 14px; background-color: #2980b9; color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background-color 0.3s; }
+        .btn-login:hover { background-color: #1a5276; }
+        .flash-message { text-align: center; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; }
+        .flash-error { background-color: #fee; color: #c0392b; border: 1px solid #f5c6cb; }
+    </style>
 </head>
 <body>
-  <div class="login-box">
-    <h2>{{system_name}}</h2>
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}
-        {% for msg in messages %}
-          <div class="flash-error">{{msg}}</div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
-    <form method="post">
-      <input type="text" name="username" class="login-input" placeholder="请输入登录账号" required autocomplete="off">
-      <input type="password" name="password" class="login-input" placeholder="请输入登录密码" required autocomplete="off">
-      <button type="submit" class="login-btn">登录管理系统</button>
-    </form>
-  </div>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>{{ system_name }}</h1>
+            <p>请输入账号密码登录</p>
+        </div>
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="flash-message flash-error">{{ messages[0] }}</div>
+            {% endif %}
+        {% endwith %}
+        <form method="post">
+            <div class="form-group">
+                <label>账号</label>
+                <input type="text" name="username" required placeholder="请输入账号">
+            </div>
+            <div class="form-group">
+                <label>密码</label>
+                <input type="password" name="password" required placeholder="请输入密码">
+            </div>
+            <button type="submit" class="btn-login">登 录</button>
+        </form>
+    </div>
 </body>
 </html>

@@ -15,7 +15,7 @@
         .nav a.active { color: #2980b9; border-bottom-color: #2980b9; }
         .nav .logout { margin-left: auto; color: #e74c3c; }
         .content { background: #fff; padding: 20px; border-radius: 0 0 12px 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.05); }
-        .flash-message { padding: 10px 14px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; }
+        .flash-message { padding: 10px 14px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; transition: opacity 0.5s; }
         .flash-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .flash-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         .form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; }
@@ -38,8 +38,13 @@
         .record-table th { padding: 12px 10px; text-align: center; color: #495057; font-weight: 600; font-size: 14px; border-bottom: 2px solid #e9ecef; }
         .record-table td { padding: 12px 10px; text-align: center; color: #2c3e50; font-size: 14px; border-bottom: 1px solid #e9ecef; }
         .record-table tbody tr:hover { background: #f8f9fa; }
-        .type-borrow { color: #e67e22; font-weight: 600; background: #fff3e0; padding: 4px 8px; border-radius: 4px; }
-        .type-return { color: #27ae60; font-weight: 600; background: #d4edda; padding: 4px 8px; border-radius: 4px; }
+        /* 操作类型字体颜色区分（移除背景色） */
+        .type-borrow { color: #e67e22; font-weight: 600; }
+        .type-return { color: #27ae60; font-weight: 600; }
+        /* 设备状态字体颜色 */
+        .status-normal { color: #27ae60; font-weight: 600; }
+        .status-fault { color: #e74c3c; font-weight: 600; }
+        .status-repair { color: #f39c12; font-weight: 600; }
         .return-time-tag { color: #e74c3c; font-weight: 500; font-size: 13px; }
         .purpose-text { color: #7f8c8d; }
         .btn-delete { padding: 6px 14px; background: #e74c3c; color: #fff; border: none; border-radius: 6px; font-size: 13px; cursor: pointer; transition: background-color 0.3s; }
@@ -67,7 +72,7 @@
         <div class="content">
             {% with messages = get_flashed_messages() %}
                 {% if messages %}
-                    <div class="flash-message {{ 'flash-success' if '成功' in messages[0] else 'flash-error' }}">
+                    <div class="flash-message {{ 'flash-success' if '成功' in messages[0] else 'flash-error' }}" id="flashMsg">
                         {{ messages[0] }}
                     </div>
                 {% endif %}
@@ -75,10 +80,10 @@
 
             <form method="post" action="/do_record" id="recordForm">
                 <div class="form-grid">
-                    <!-- 资产编号/名称选择 -->
+                    <!-- 资产编号/名称选择（修复直接输入报错） -->
                     <div class="form-group asset-select">
                         <label>资产*</label>
-                        <input type="text" id="assetInput" required placeholder="输入资产编号/名称选择">
+                        <input type="text" id="assetInput" required placeholder="输入资产编号/名称自动匹配">
                         <input type="hidden" name="asset_id" id="assetId" required>
                         <div class="asset-list" id="assetList"></div>
                     </div>
@@ -115,9 +120,8 @@
                         <label>设备状态*</label>
                         <select name="device_status" required>
                             <option value="正常">正常</option>
-                            <option value="损坏">损坏</option>
+                            <option value="故障">故障</option>
                             <option value="维修中">维修中</option>
-                            <option value="报废">报废</option>
                         </select>
                     </div>
                     <div class="form-group"></div>
@@ -131,7 +135,7 @@
                 <thead>
                     <tr>
                         <th>记录ID</th>
-                        <th>资产编号</th>
+                        <th>资产</th>
                         <th>操作人</th>
                         <th>操作类型</th>
                         <th>数量</th>
@@ -147,6 +151,21 @@
                     {% set purpose_origin = purpose_str %}
                     {% set return_time = '无' %}
                     {% set device_status = '' %}
+                    {% set asset_id = record.asset_id %}
+                    {% set asset_name = '' %}
+                    {% set asset_model = '' %}
+                    {# 预存资产信息，用于显示资产列 #}
+                    {% for asset in assets %}
+                        {% if asset.asset_id == asset_id %}
+                            {% set asset_name = asset.name %}
+                            {% set asset_model = asset.model %}
+                        {% endif %}
+                    {% endfor %}
+                    {# 解析型号（移除分类/来源后缀） #}
+                    {% if '|' in asset_model %}
+                        {% set asset_model = asset_model.split('|')[0] %}
+                    {% endif %}
+                    {# 解析预计归还时间/设备状态 #}
                     {% if '预计归还：' in purpose_str %}
                         {% if '|' in purpose_str %}
                             {% set parts = purpose_str.split('|', 1) %}
@@ -166,14 +185,18 @@
                             {% set purpose_origin = '归还' %}
                         {% endif %}
                     {% endif %}
+                    {# 设备状态样式映射 #}
+                    {% set status_class = 'status-normal' if device_status == '正常' else 'status-fault' if device_status == '故障' else 'status-repair' if device_status == '维修中' else '' %}
                     <tr>
                         <td>{{ record.id }}</td>
-                        <td>{{ record.asset_id }}</td>
+                        <!-- 资产列：显示编号（名称-型号） -->
+                        <td>{{ asset_id }}（{{ asset_name }}-{{ asset_model or '无' }}）</td>
                         <td>{{ record.person }}</td>
+                        <!-- 操作类型字体颜色区分 -->
                         <td class="{{ 'type-borrow' if record.type == '领用' else 'type-return' }}">{{ record.type }}</td>
                         <td>{{ record.quantity }}</td>
                         <td>{{ record.time }}</td>
-                        <td class="purpose-text">{{ purpose_origin or '未填写' }}{% if device_status %}（{{ device_status }}）{% endif %}</td>
+                        <td class="purpose-text">{{ purpose_origin or '未填写' }}{% if device_status %}（<span class="{{ status_class }}">{{ device_status }}</span>）{% endif %}</td>
                         <td>{% if return_time != '无' %}<span class="return-time-tag">{{ return_time }}</span>{% else %}无{% endif %}</td>
                         <td>
                             <form method="post" action="/delete_record" onsubmit="return confirm('确定删除该记录并恢复库存？')" style="display:inline;">
@@ -189,10 +212,10 @@
     </div>
 
     <script>
-        // 资产数据（用于自动补全）
+        // 资产数据（用于自动补全，修复直接输入报错）
         const assets = [
             {% for asset in assets %}
-            { id: "{{ asset.asset_id }}", name: "{{ asset.name }}" },
+            { id: "{{ asset.asset_id }}", name: "{{ asset.name }}", model: "{{ asset.model.split('|')[0] if '|' in asset.model else asset.model }}" },
             {% endfor %}
         ];
 
@@ -205,15 +228,19 @@
         const purposeGroup = document.getElementById('purposeGroup');
         const statusGroup = document.getElementById('statusGroup');
 
-        // 资产自动补全
-        assetInput.addEventListener('input', function() {
-            const query = this.value.toLowerCase();
+        // 资产自动补全（修复直接输入报错：支持输入名称/编号自动匹配）
+        function filterAssets(query) {
+            query = query.toLowerCase();
+            return assets.filter(a => 
+                a.id.toLowerCase().includes(query) || 
+                a.name.toLowerCase().includes(query) ||
+                `${a.id} - ${a.name}`.toLowerCase().includes(query)
+            );
+        }
+
+        // 渲染资产列表
+        function renderAssetList(filtered) {
             assetList.innerHTML = '';
-            if (!query) {
-                assetList.style.display = 'none';
-                return;
-            }
-            const filtered = assets.filter(a => a.id.toLowerCase().includes(query) || a.name.toLowerCase().includes(query));
             if (filtered.length === 0) {
                 assetList.style.display = 'none';
                 return;
@@ -222,6 +249,7 @@
                 const item = document.createElement('div');
                 item.className = 'asset-item';
                 item.textContent = `${a.id} - ${a.name}`;
+                item.dataset.id = a.id;
                 item.addEventListener('click', function() {
                     assetInput.value = `${a.id} - ${a.name}`;
                     assetId.value = a.id;
@@ -230,6 +258,42 @@
                 assetList.appendChild(item);
             });
             assetList.style.display = 'block';
+        }
+
+        // 输入事件监听
+        assetInput.addEventListener('input', function() {
+            const query = this.value.trim();
+            // 自动匹配资产
+            if (query) {
+                const filtered = filterAssets(query);
+                renderAssetList(filtered);
+                // 自动填充资产ID（如果唯一匹配）
+                if (filtered.length === 1) {
+                    assetId.value = filtered[0].id;
+                } else {
+                    // 尝试从输入中提取编号
+                    const idMatch = query.match(/^(\d+)\s*-?\s*/);
+                    if (idMatch) {
+                        const matched = assets.find(a => a.id === idMatch[1]);
+                        if (matched) {
+                            assetId.value = matched.id;
+                        } else {
+                            assetId.value = '';
+                        }
+                    } else {
+                        // 按名称匹配
+                        const matched = assets.find(a => a.name.toLowerCase() === query.toLowerCase());
+                        if (matched) {
+                            assetId.value = matched.id;
+                        } else {
+                            assetId.value = '';
+                        }
+                    }
+                }
+            } else {
+                assetList.style.display = 'none';
+                assetId.value = '';
+            }
         });
 
         // 点击外部关闭列表
@@ -259,6 +323,17 @@
         // 初始状态
         updateFields();
         opType.addEventListener('change', updateFields);
+
+        // 提示框自动消失
+        const flashMsg = document.getElementById('flashMsg');
+        if (flashMsg) {
+            setTimeout(() => {
+                flashMsg.style.opacity = '0';
+                setTimeout(() => {
+                    flashMsg.style.display = 'none';
+                }, 500);
+            }, 1500);
+        }
     </script>
 </body>
 </html>

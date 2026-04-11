@@ -28,7 +28,6 @@
             font-size: 16px; 
             font-weight: 500;
             text-align: left;
-            /* 强制标签与输入框分行 */
             width: 100%;
         }
         .form-group input, .form-group select { 
@@ -38,8 +37,6 @@
             font-size: 15px; 
             width: 100%;
             transition: border-color 0.3s;
-            /* 清除输入框内所有提示符 */
-            placeholder: none;
         }
         .form-group input::placeholder { 
             color: transparent; 
@@ -65,7 +62,7 @@
         }
         .btn-query:hover { background: #1a5276; }
 
-        /* 查询结果样式 */
+        /* 查询结果样式：修复未归还记录布局 */
         .result-card { background: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 20px; border-left: 4px solid #2980b9; }
         .result-card h3 { color: #2c3e50; margin-bottom: 18px; font-size: 18px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
         .asset-info { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 15px; }
@@ -78,9 +75,30 @@
         .no-data { text-align: center; color: #7f8c8d; font-size: 16px; padding: 60px 0; line-height: 1.8; }
         .unreturned-title { color: #e74c3c; font-size: 15px; margin: 20px 0 10px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
         .unreturned-title::before { content: "⚠️"; font-size: 14px; }
-        .unreturned-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        .unreturned-table th { background: #e9ecef; padding: 12px 10px; text-align: center; font-size: 14px; color: #495057; border-bottom: 2px solid #dee2e6; }
-        .unreturned-table td { padding: 12px 10px; text-align: center; font-size: 14px; color: #2c3e50; border-bottom: 1px solid #dee2e6; }
+        /* 核心修复：未归还记录表格布局，适配手机端 */
+        .unreturned-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 10px;
+            table-layout: fixed;
+        }
+        .unreturned-table th { 
+            background: #e9ecef; 
+            padding: 12px 8px; 
+            text-align: center; 
+            font-size: 14px; 
+            color: #495057; 
+            border-bottom: 2px solid #dee2e6;
+            word-wrap: break-word;
+        }
+        .unreturned-table td { 
+            padding: 12px 8px; 
+            text-align: center; 
+            font-size: 14px; 
+            color: #2c3e50; 
+            border-bottom: 1px solid #dee2e6;
+            word-wrap: break-word;
+        }
         .status-in { color: #27ae60; font-weight: 700; }
         .status-out { color: #e74c3c; font-weight: 700; }
         .return-time { color: #e74c3c; font-weight: 600; }
@@ -88,6 +106,7 @@
         /* 响应式：彻底修复手机端布局 */
         @media (max-width: 992px) {
             .asset-info { grid-template-columns: repeat(2, 1fr); }
+            .unreturned-table th, .unreturned-table td { font-size: 13px; padding: 10px 6px; }
         }
         @media (max-width: 768px) {
             .query-form { 
@@ -105,7 +124,12 @@
                 margin-top: 10px;
             }
             .asset-info { grid-template-columns: 1fr; }
+            /* 手机端未归还记录表格横向滚动 */
             .unreturned-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            .unreturned-table th, .unreturned-table td { 
+                min-width: 100px; 
+                font-size: 13px;
+            }
             .nav { justify-content: flex-start; gap: 15px; }
         }
     </style>

@@ -6,7 +6,7 @@ import requests
 import threading
 import time
 
-# ====================== 数据库配置（匹配阿里云RDS，无需修改）======================
+# 数据库配置（无需修改）
 DB_CONFIG = {
     "host": "rm-bp1084h4bg6153o8veo.mysql.rds.aliyuncs.com",
     "port": 60030,
@@ -17,57 +17,45 @@ DB_CONFIG = {
     "cursorclass": pymysql.cursors.DictCursor
 }
 
-# ====================== 系统配置 ======================
-ADMIN_USER = "lab429"
-ADMIN_PWD = "123456"
+# 系统配置
+ADMIN_USER = "admin"
+ADMIN_PWD = "lab123456"
 SYSTEM_NAME = "AEIM实验室管理系统"
 CATEGORIES = ["机械类", "电气类", "其他类"]
 SOURCES = ["自购", "企业", "学校"]
 DEFAULT_RETURN_DAYS = 1
 # 定时唤醒配置
-WAKE_UP_INTERVAL = 300 # 唤醒间隔（秒），10分钟=600秒，可修改
-SELF_URL = os.environ.get('SELF_URL', 'https://lab-asset-2.onrender.com')  # 替换为你的Render项目地址
+WAKE_UP_INTERVAL = 600
+SELF_URL = os.environ.get('SELF_URL', 'https://lab-asset.onrender.com')
 
 app = Flask(__name__)
-app.secret_key = "lab_asset_2026_secure_v5"
+app.secret_key = "lab_asset_2026_final_secure"
 
-# ====================== 定时唤醒服务（核心新增）======================
+# 定时唤醒服务（Render防休眠，本地不启动）
 def wake_up_service():
-    """定时请求自身健康检查接口，防止Render休眠"""
     while True:
         try:
-            # 发送GET请求到/health接口
-            response = requests.get(f"{SELF_URL}/health", timeout=10)
-            if response.status_code == 200:
-                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 服务唤醒成功，状态码：{response.status_code}")
-            else:
-                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 服务唤醒失败，状态码：{response.status_code}")
+            response = requests.get(f"{SELF_URL}/health", timeout=5)
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 唤醒成功，状态码：{response.status_code}")
         except Exception as e:
-            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 唤醒请求异常：{str(e)}")
-        # 间隔指定时间后再次执行
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 唤醒异常：{str(e)}")
         time.sleep(WAKE_UP_INTERVAL)
-
-# 启动后台定时唤醒线程（仅在生产环境/Render运行时启动）
-if os.environ.get('PORT'):  # Render会自动设置PORT环境变量，本地运行不触发
+if os.environ.get('PORT'):
     threading.Thread(target=wake_up_service, daemon=True).start()
-    print(f"✅ 定时唤醒服务已启动，间隔{WAKE_UP_INTERVAL/60}分钟，目标地址：{SELF_URL}")
+    print(f"✅ 定时唤醒服务启动，间隔{WAKE_UP_INTERVAL/60}分钟，目标：{SELF_URL}")
 
-# ====================== 基础工具函数 ======================
+# 基础工具函数
 @app.route('/health')
 def health_check():
-    """健康检查接口，用于定时唤醒和Render状态检测"""
     return 'OK', 200
-
 def get_beijing_time():
     return datetime.utcnow() + timedelta(hours=8)
-
 def format_beijing_time(dt):
     return dt.strftime("%Y-%m-%d %H:%M:%S")
-
 def get_db():
     return pymysql.connect(**DB_CONFIG)
 
-# ====================== 登录校验 ======================
+# 登录校验
 @app.before_request
 def check_login():
     if request.path in ["/login", "/health"]:
@@ -75,7 +63,7 @@ def check_login():
     if not session.get("login"):
         return redirect("/login")
 
-# ====================== 登录/登出 ======================
+# 登录/登出
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -86,13 +74,12 @@ def login():
             return redirect("/")
         flash("⚠️ 账号或密码错误")
     return render_template("login.html", system_name=SYSTEM_NAME)
-
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/login")
 
-# ====================== 资产列表 ======================
+# 资产列表（核心：采购时间无占位符）
 @app.route("/")
 def index():
     db = get_db()
@@ -100,17 +87,15 @@ def index():
     cur.execute("SELECT * FROM asset_info ORDER BY asset_id")
     assets = cur.fetchall()
     db.close()
-    return render_template("index.html", assets=assets, system_name=SYSTEM_NAME,
-                           categories=CATEGORIES, sources=SOURCES)
+    return render_template("index.html", assets=assets, system_name=SYSTEM_NAME, categories=CATEGORIES, sources=SOURCES)
 
-# ====================== 新增资产 ======================
+# 新增资产（采购时间无占位符，未选则留空）
 @app.route("/add_asset", methods=["POST"])
 def add_asset():
     form_data = request.form
     if not form_data.get("asset_id") or not form_data.get("name") or not form_data.get("category") or not form_data.get("source"):
         flash("⚠️ 资产编号、名称、分类、来源为必填项！")
         return redirect("/")
-
     db = get_db()
     try:
         cur = db.cursor()
@@ -118,24 +103,17 @@ def add_asset():
         if cur.fetchone():
             flash("⚠️ 该资产编号已存在！")
             return redirect("/")
-
         model_origin = form_data.get("model", "")
         model_with_ext = f"{model_origin}|{form_data['category']}-{form_data['source']}" if model_origin else f"{form_data['category']}-{form_data['source']}"
-
+        # 采购时间：用户未选则留空，无占位符
+        purchase_time = form_data.get("purchase_time", "")
         cur.execute("""
-            INSERT INTO asset_info (
-                asset_id, name, model, purchase_time, location, 
-                total_quantity, current_quantity, status
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO asset_info (asset_id, name, model, purchase_time, location, total_quantity, current_quantity, status)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """, (
-            form_data["asset_id"],
-            form_data["name"],
-            model_with_ext,
-            form_data.get("purchase_time", get_beijing_time().strftime("%Y-%m-%d")),
-            form_data.get("location", ""),
-            int(form_data.get("total_quantity", 1)),
-            int(form_data.get("total_quantity", 1)),
-            "在库"
+            form_data["asset_id"], form_data["name"], model_with_ext, purchase_time,
+            form_data.get("location", ""), int(form_data.get("total_quantity", 1)),
+            int(form_data.get("total_quantity", 1)), "在库"
         ))
         db.commit()
         flash("✅ 资产添加成功！")
@@ -146,7 +124,7 @@ def add_asset():
         db.close()
     return redirect("/")
 
-# ====================== 删除资产 ======================
+# 删除资产
 @app.route("/delete_asset", methods=["POST"])
 def delete_asset():
     asset_id = request.form["asset_id"]
@@ -164,26 +142,22 @@ def delete_asset():
         db.close()
     return redirect("/")
 
-# ====================== 出入记录页 ======================
+# 出入记录页
 @app.route("/record")
 def record():
     db = get_db()
     cur = db.cursor()
     cur.execute("SELECT asset_id, name, model FROM asset_info ORDER BY name")
     assets = cur.fetchall()
-    # 解析资产型号
     for asset in assets:
         model_str = asset.get("model", "")
-        if "|" in model_str:
-            asset["model_origin"] = model_str.split("|")[0]
-        else:
-            asset["model_origin"] = model_str if "-" not in model_str else "无"
+        asset["model_origin"] = model_str.split("|")[0] if "|" in model_str else (model_str if "-" not in model_str else "无")
     cur.execute("SELECT * FROM record_info ORDER BY time DESC")
     records = cur.fetchall()
     db.close()
     return render_template("record.html", records=records, system_name=SYSTEM_NAME, assets=assets)
 
-# ====================== 提交出入记录 ======================
+# 提交出入记录
 @app.route("/do_record", methods=["POST"])
 def do_record():
     form_data = request.form
@@ -194,7 +168,6 @@ def do_record():
         if not form_data.get(key):
             flash(f"⚠️ {key}为必填项！")
             return redirect("/record")
-
     asset_id = form_data["asset_id"]
     person = form_data["person"].strip()
     op_type = form_data["type"]
@@ -202,7 +175,6 @@ def do_record():
     return_days = int(form_data.get("return_days", DEFAULT_RETURN_DAYS)) if op_type == "领用" else 0
     purpose_origin = form_data.get("purpose", "")
     device_status = form_data.get("device_status", "正常") if op_type == "归还" else ""
-
     db = get_db()
     try:
         cur = db.cursor()
@@ -211,10 +183,7 @@ def do_record():
         if not asset:
             flash("⚠️ 资产不存在！")
             return redirect("/record")
-
-        current_qty = asset["current_quantity"]
-        total_qty = asset["total_quantity"]
-
+        current_qty, total_qty = asset["current_quantity"], asset["total_quantity"]
         if op_type == "领用":
             if current_qty < quantity:
                 flash(f"⚠️ 库存不足！当前剩余 {current_qty} 件，无法领用 {quantity} 件")
@@ -223,49 +192,24 @@ def do_record():
             expected_return = format_beijing_time(get_beijing_time() + timedelta(days=return_days))
             purpose_with_return = f"{purpose_origin}|预计归还：{expected_return}" if purpose_origin else f"预计归还：{expected_return}"
         else:
-            cur.execute("""
-                SELECT COALESCE(SUM(quantity), 0) as total_borrowed 
-                FROM record_info 
-                WHERE asset_id=%s AND person=%s AND type='领用'
-            """, (asset_id, person))
+            cur.execute("SELECT COALESCE(SUM(quantity),0) as total_borrowed FROM record_info WHERE asset_id=%s AND person=%s AND type='领用'", (asset_id, person))
             total_borrowed = cur.fetchone()["total_borrowed"]
-
-            cur.execute("""
-                SELECT COALESCE(SUM(quantity), 0) as total_returned 
-                FROM record_info 
-                WHERE asset_id=%s AND person=%s AND type='归还'
-            """, (asset_id, person))
+            cur.execute("SELECT COALESCE(SUM(quantity),0) as total_returned FROM record_info WHERE asset_id=%s AND person=%s AND type='归还'", (asset_id, person))
             total_returned = cur.fetchone()["total_returned"]
-
-            available_return = total_borrowed - total_returned
-            if available_return < quantity:
-                flash(f"⚠️ 您当前仅可归还 {available_return} 件，无法超还")
+            if (total_borrowed - total_returned) < quantity:
+                flash(f"⚠️ 仅可归还 {total_borrowed - total_returned} 件，无法超还！")
                 return redirect("/record")
-
             new_qty = current_qty + quantity
             if new_qty > total_qty:
-                flash(f"⚠️ 归还后库存({new_qty})超过总数量({total_qty})，无法操作")
+                flash(f"⚠️ 归还后库存({new_qty})超过总数量({total_qty})！")
                 return redirect("/record")
-            # 归还时仅存储设备状态
             purpose_with_return = f"设备状态：{device_status}"
-
         new_status = "借出" if new_qty == 0 else "在库"
+        cur.execute("UPDATE asset_info SET current_quantity=%s, status=%s WHERE asset_id=%s", (new_qty, new_status, asset_id))
         cur.execute("""
-            UPDATE asset_info 
-            SET current_quantity=%s, status=%s 
-            WHERE asset_id=%s
-        """, (new_qty, new_status, asset_id))
-
-        cur.execute("""
-            INSERT INTO record_info (
-                asset_id, person, type, quantity, time, purpose, handler
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, (
-            asset_id, person, op_type, quantity,
-            format_beijing_time(get_beijing_time()),
-            purpose_with_return,
-            ""
-        ))
+            INSERT INTO record_info (asset_id, person, type, quantity, time, purpose, handler)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (asset_id, person, op_type, quantity, format_beijing_time(get_beijing_time()), purpose_with_return, ""))
         db.commit()
         flash("✅ 操作成功！")
     except Exception as e:
@@ -275,7 +219,7 @@ def do_record():
         db.close()
     return redirect("/record")
 
-# ====================== 删除记录 ======================
+# 删除出入记录
 @app.route("/delete_record", methods=["POST"])
 def delete_record():
     record_id = request.form["record_id"]
@@ -287,36 +231,22 @@ def delete_record():
         if not record:
             flash("⚠️ 记录不存在！")
             return redirect("/record")
-
-        asset_id = record["asset_id"]
-        op_type = record["type"]
-        quantity = record["quantity"]
-
+        asset_id, op_type, quantity = record["asset_id"], record["type"], record["quantity"]
         cur.execute("SELECT * FROM asset_info WHERE asset_id=%s", (asset_id,))
         asset = cur.fetchone()
         if not asset:
             flash("⚠️ 资产不存在！")
             return redirect("/record")
-
         current_qty = asset["current_quantity"]
-        if op_type == "领用":
-            new_qty = current_qty + quantity
-        else:
-            new_qty = current_qty - quantity
-            if new_qty < 0:
-                flash("⚠️ 删除后库存为负，无法操作！")
-                return redirect("/record")
-
+        new_qty = current_qty + quantity if op_type == "领用" else current_qty - quantity
+        if new_qty < 0:
+            flash("⚠️ 删除后库存为负，无法操作！")
+            return redirect("/record")
         new_status = "借出" if new_qty == 0 else "在库"
-        cur.execute("""
-            UPDATE asset_info 
-            SET current_quantity=%s, status=%s 
-            WHERE asset_id=%s
-        """, (new_qty, new_status, asset_id))
-
+        cur.execute("UPDATE asset_info SET current_quantity=%s, status=%s WHERE asset_id=%s", (new_qty, new_status, asset_id))
         cur.execute("DELETE FROM record_info WHERE id=%s", (record_id,))
         db.commit()
-        flash("✅ 记录已删除，库存已恢复！")
+        flash("✅ 记录删除成功，库存已恢复！")
     except Exception as e:
         print(f"删除记录失败: {e}")
         flash("❌ 记录删除失败！")
@@ -324,50 +254,42 @@ def delete_record():
         db.close()
     return redirect("/record")
 
-# ====================== 资产查询页 ======================
+# 查询页
 @app.route("/query")
 def query():
     return render_template("query.html", system_name=SYSTEM_NAME, categories=CATEGORIES)
 
-# ====================== 资产查询API（编号+名称+分类）======================
+# 查询API（单输入框：编号/名称通用，保留分类筛选）
 @app.route("/api/asset", methods=["POST"])
 def api_asset():
     req_data = request.json
-    asset_id = req_data.get("asset_id", "").strip()
-    asset_name = req_data.get("asset_name", "").strip()
+    search_key = req_data.get("search_key", "").strip()
     cate_filter = req_data.get("category", "").strip()
-
     db = get_db()
     cur = db.cursor()
-
-    # 多条件组合查询：编号+名称+分类
     query_sql = "SELECT * FROM asset_info WHERE 1=1"
     params = []
-    if asset_id:
-        query_sql += " AND asset_id LIKE %s"
-        params.append(f"%{asset_id}%")
-    if asset_name:
-        query_sql += " AND name LIKE %s"
-        params.append(f"%{asset_name}%")
+    # 单输入框模糊查询：资产编号 + 资产名称
+    if search_key:
+        query_sql += " AND (asset_id LIKE %s OR name LIKE %s)"
+        params.append(f"%{search_key}%")
+        params.append(f"%{search_key}%")
+    # 分类筛选
     if cate_filter:
         query_sql += " AND (model LIKE %s OR model LIKE %s)"
         params.append(f"%|{cate_filter}-%")
         params.append(f"{cate_filter}-%")
-
     query_sql += " ORDER BY asset_id"
     cur.execute(query_sql, params)
-
     assets = cur.fetchall()
     if not assets:
         db.close()
         return jsonify(ok=False, msg="未查询到符合条件的资产")
-
+    # 解析资产信息
     asset_list = []
     for asset in assets:
         model_str = asset.get("model", "")
-        asset_category = "未分类"
-        asset_source = "未知来源"
-        model_origin = model_str
+        asset_category, asset_source, model_origin = "未分类", "未知来源", model_str
         if "|" in model_str:
             model_origin, ext = model_str.split("|", 1)
             if "-" in ext:
@@ -379,35 +301,22 @@ def api_asset():
         asset["category"] = asset_category
         asset["source"] = asset_source
         asset_list.append(asset)
-
+    # 组装未归还记录
     result = []
     for asset in asset_list:
         cur.execute("""
-            SELECT 
-                person,
-                SUM(CASE WHEN type='领用' THEN quantity ELSE 0 END) as total_borrowed,
-                SUM(CASE WHEN type='归还' THEN quantity ELSE 0 END) as total_returned,
-                GROUP_CONCAT(time ORDER BY time DESC) as times,
-                GROUP_CONCAT(purpose ORDER BY time DESC) as purposes
-            FROM record_info 
-            WHERE asset_id=%s 
-            GROUP BY person
-            HAVING (total_borrowed - total_returned) > 0
-            ORDER BY times DESC
+            SELECT person, SUM(CASE WHEN type='领用' THEN quantity ELSE 0 END) as total_borrowed,
+                   SUM(CASE WHEN type='归还' THEN quantity ELSE 0 END) as total_returned,
+                   GROUP_CONCAT(time ORDER BY time DESC) as times,
+                   GROUP_CONCAT(purpose ORDER BY time DESC) as purposes
+            FROM record_info WHERE asset_id=%s GROUP BY person HAVING (total_borrowed - total_returned) > 0
         """, (asset["asset_id"],))
         unreturned_list = cur.fetchall()
-
         unreturned = []
         for item in unreturned_list:
-            person = item["person"]
-            borrowed = item["total_borrowed"]
-            returned = item["total_returned"]
-            times = item["times"].split(",")
-            purposes = item["purposes"].split(",")
-            latest_time = times[0]
-            latest_purpose = purposes[0] if purposes[0] else "未填写"
-            expected_return = "无"
-
+            person, borrowed, returned = item["person"], item["total_borrowed"], item["total_returned"]
+            times, purposes = item["times"].split(","), item["purposes"].split(",")
+            latest_time, latest_purpose, expected_return = times[0], purposes[0] or "未填写", "无"
             if "预计归还：" in latest_purpose:
                 if "|" in latest_purpose:
                     latest_purpose, return_part = latest_purpose.split("|", 1)
@@ -415,24 +324,15 @@ def api_asset():
                 else:
                     expected_return = latest_purpose.replace("预计归还：", "")
                     latest_purpose = "领用"
-
             unreturned.append({
-                "person": person,
-                "quantity": borrowed - returned,
-                "time": latest_time,
-                "purpose": latest_purpose,
-                "expected_return": expected_return
+                "person": person, "quantity": borrowed - returned,
+                "time": latest_time, "purpose": latest_purpose, "expected_return": expected_return
             })
-
-        result.append({
-            "asset": asset,
-            "unreturned": unreturned
-        })
-
+        result.append({"asset": asset, "unreturned": unreturned})
     db.close()
     return jsonify(ok=True, data=result)
 
-# ====================== 启动服务（适配Render端口）======================
+# 启动服务
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port, debug=False)

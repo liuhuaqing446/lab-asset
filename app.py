@@ -143,19 +143,6 @@ def delete_asset():
     return redirect("/")
 
 # 出入记录页
-@app.route("/record")
-def record():
-    db = get_db()
-    cur = db.cursor()
-    cur.execute("SELECT asset_id, name, model FROM asset_info ORDER BY name")
-    assets = cur.fetchall()
-    for asset in assets:
-        model_str = asset.get("model", "")
-        asset["model_origin"] = model_str.split("|")[0] if "|" in model_str else (model_str if "-" not in model_str else "无")
-    cur.execute("SELECT * FROM record_info ORDER BY time DESC")
-    records = cur.fetchall()
-    db.close()
-    return render_template("record.html", records=records, system_name=SYSTEM_NAME, assets=assets)
 
 # 提交出入记录
 @app.route("/do_record", methods=["POST"])

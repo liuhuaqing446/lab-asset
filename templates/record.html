@@ -122,17 +122,15 @@
                     {% set op_type = record.type %}
                     {% set purpose_str = record.purpose or '' %}
 
-                    {# 🔥 100%精准匹配资产，彻底解决未知资产 #}
+                    {# 🔥 用asset_map直接匹配，100%成功，彻底解决未知资产 #}
                     {% set asset_name = '未知资产' %}
                     {% set asset_model = '无' %}
-                    {% for asset in assets %}
-                        {% if asset.asset_id == asset_id %}
-                            {% set asset_name = asset.name %}
-                            {% set asset_model = asset.model_origin %}
-                        {% endif %}
-                    {% endfor %}
+                    {% if asset_id in asset_map %}
+                        {% set asset_name = asset_map[asset_id].name %}
+                        {% set asset_model = asset_map[asset_id].model_origin %}
+                    {% endif %}
 
-                    {# 🔥 解析用途/状态，彻底解决ID40显示问题 #}
+                    {# 解析用途/状态 #}
                     {% set purpose_origin = '' %}
                     {% set return_time = '无' %}
                     {% set device_status = '' %}

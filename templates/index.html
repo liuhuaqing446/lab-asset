@@ -22,9 +22,10 @@
         .form-group label { color: #34495e; font-size: 14px; font-weight: 500; }
         .form-group input, .form-group select { padding: 10px 14px; border: 1px solid #e1e8ed; border-radius: 8px; font-size: 14px; }
         .form-group input:focus, .form-group select:focus { outline: none; border-color: #2980b9; box-shadow: 0 0 0 3px rgba(41,128,185,0.1); }
-        /* 核心修复：彻底隐藏date输入框的yyyy/mm/日占位符 */
+        /* 核心修复：彻底隐藏date输入框的yyyy/mm/日占位符，同时保证选中后显示 */
         input[type="date"]::-webkit-calendar-picker-indicator {
             opacity: 1;
+            cursor: pointer;
         }
         input[type="date"]::placeholder {
             color: transparent;
@@ -32,7 +33,8 @@
         input[type="date"]::-webkit-datetime-edit {
             color: transparent;
         }
-        input[type="date"]:focus::-webkit-datetime-edit {
+        input[type="date"]:focus::-webkit-datetime-edit,
+        input[type="date"]:valid::-webkit-datetime-edit {
             color: #34495e;
         }
         .btn-submit { grid-column: 1 / -1; justify-self: center; padding: 12px 35px; background: #2980b9; color: #fff; border: none; border-radius: 8px; cursor: pointer; }
@@ -89,7 +91,7 @@
                             {% for src in sources %}<option value="{{ src }}">{{ src }}</option>{% endfor %}
                         </select>
                     </div>
-                    <!-- 核心修复：采购时间input，无placeholder，配合CSS隐藏默认提示 -->
+                    <!-- 核心修复：采购时间input，配合CSS隐藏默认提示，选中后正常显示 -->
                     <div class="form-group"><label>采购时间</label><input type="date" name="purchase_time"></div>
                     <div class="form-group"><label>存放位置</label><input type="text" name="location" placeholder=""></div>
                     <div class="form-group"><label>总数量*</label><input type="number" name="total_quantity" value="1" min="1" required></div>

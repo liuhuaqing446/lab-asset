@@ -23,10 +23,10 @@
         .form-group label { color: #34495e; font-size: 14px; font-weight: 500; }
         .form-group input, .form-group select { padding: 10px 14px; border: 1px solid #e1e8ed; border-radius: 8px; font-size: 14px; transition: border-color 0.3s; }
         .form-group input:focus, .form-group select:focus { outline: none; border-color: #2980b9; box-shadow: 0 0 0 3px rgba(41,128,185,0.1); }
-        /* 移除采购时间占位符，美化输入框 */
+        /* 彻底移除采购时间占位符 */
         .form-group input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
-        .form-group input[type="date"] { position: relative; }
         .form-group input[type="date"]::-webkit-datetime-edit { padding: 0; }
+        .form-group input[type="date"] { position: relative; }
         .btn-submit { grid-column: 1 / -1; justify-self: center; padding: 12px 35px; background: #2980b9; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background-color 0.3s; }
         .btn-submit:hover { background: #1a5276; }
         .asset-table { width: 100%; border-collapse: collapse; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 8px rgba(0,0,0,0.05); }
@@ -34,7 +34,7 @@
         .asset-table th { padding: 12px 10px; text-align: center; color: #495057; font-weight: 600; font-size: 14px; border-bottom: 2px solid #e9ecef; }
         .asset-table td { padding: 12px 10px; text-align: center; color: #2c3e50; font-size: 14px; border-bottom: 1px solid #e9ecef; }
         .asset-table tbody tr:hover { background: #f8f9fa; }
-        /* 状态字体高亮：在库绿色，借出红色（移除背景色） */
+        /* 状态字体高亮：在库绿色，借出红色（严格移除背景色） */
         .status-in { color: #27ae60; font-weight: 700; }
         .status-out { color: #e74c3c; font-weight: 700; }
         .category-tag { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: #fff; }

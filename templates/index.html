@@ -22,12 +22,19 @@
         .form-group label { color: #34495e; font-size: 14px; font-weight: 500; }
         .form-group input, .form-group select { padding: 10px 14px; border: 1px solid #e1e8ed; border-radius: 8px; font-size: 14px; }
         .form-group input:focus, .form-group select:focus { outline: none; border-color: #2980b9; box-shadow: 0 0 0 3px rgba(41,128,185,0.1); }
+        
+        /* --- 新增：强制隐藏 date 输入框默认的 yyyy/mm/dd 占位符 --- */
+        input[type="date"]::-webkit-datetime-edit { color: transparent; }
+        input[type="date"]:focus::-webkit-datetime-edit,
+        input[type="date"]:not([value=""])::-webkit-datetime-edit,
+        input[type="date"]:valid::-webkit-datetime-edit { color: #2c3e50; }
+        /* ------------------------------------------------------- */
+
         .btn-submit { grid-column: 1 / -1; justify-self: center; padding: 12px 35px; background: #2980b9; color: #fff; border: none; border-radius: 8px; cursor: pointer; }
         .asset-table { width: 100%; border-collapse: collapse; border-radius: 8px; overflow: hidden; }
         .asset-table thead { background: #f8f9fa; }
         .asset-table th, .asset-table td { padding: 12px 10px; text-align: center; border-bottom: 1px solid #e9ecef; }
         .asset-table tbody tr:hover { background: #f8f9fa; }
-        /* 状态字体：在库绿色 借出红色（加粗突出） */
         .status-in { color: #27ae60; font-weight: 700; font-size: 15px; }
         .status-out { color: #e74c3c; font-weight: 700; font-size: 15px; }
         .category-tag { display: inline-block; padding: 4px 8px; border-radius: 4px; color: #fff; font-size: 12px; }
@@ -35,7 +42,6 @@
         .category-2 { background: #e67e22; }
         .category-3 { background: #7f8c8d; }
         .btn-delete { padding: 6px 14px; background: #e74c3c; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
-        /* 响应式 */
         @media (max-width: 992px) { .form-grid { grid-template-columns: repeat(2, 1fr); } }
         @media (max-width: 768px) { .form-grid { grid-template-columns: 1fr; } .asset-table { display: block; overflow-x: auto; } }
     </style>
@@ -72,7 +78,7 @@
                             {% for src in sources %}<option value="{{ src }}">{{ src }}</option>{% endfor %}
                         </select>
                     </div>
-                    <div class="form-group"><label>采购时间</label><input type="date" name="purchase_time"> <!-- 无占位符 --></div>
+                    <div class="form-group"><label>采购时间</label><input type="date" name="purchase_time"></div>
                     <div class="form-group"><label>存放位置</label><input type="text" name="location" placeholder="请输入存放位置"></div>
                     <div class="form-group"><label>总数量*</label><input type="number" name="total_quantity" value="1" min="1" required></div>
                     <div class="form-group"></div>
@@ -100,7 +106,6 @@
                         <td><span class="category-tag {{ cate_class }}">{{ cate }}</span></td><td>{{ src }}</td>
                         <td>{{ asset.purchase_time or '未填写' }}</td><td>{{ asset.location or '未填写' }}</td>
                         <td>{{ asset.total_quantity }}</td><td>{{ asset.current_quantity }}</td>
-                        <!-- 状态字体颜色：在库绿，借出红 -->
                         <td class="{{ 'status-out' if asset.status == '借出' else 'status-in' }}">{{ asset.status }}</td>
                         <td>
                             <form method="post" action="/delete_asset" onsubmit="return confirm('确定删除该资产及所有记录？')" style="display:inline;">
@@ -115,7 +120,6 @@
         </div>
     </div>
     <script>
-        // 提示框1.5秒自动消失
         const flashMsg = document.querySelector('.flash-message');
         if (flashMsg) {
             setTimeout(() => { flashMsg.style.opacity = 0; setTimeout(() => flashMsg.remove(), 500); }, 1500);

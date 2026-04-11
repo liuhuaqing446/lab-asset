@@ -143,24 +143,47 @@ def delete_asset():
     return redirect("/")
 
 # ==============================
-# ✅ 仅修改此处：出入记录页（修复资产显示，其余不动）
+# ✅ 核心修复：统一资产ID类型，彻底解决未知资产
 # ==============================
 @app.route("/record")
 def record():
     db = get_db()
     cur = db.cursor()
-    # 加载完整资产信息，用于模板匹配
+    
+    # 1. 加载资产，统一asset_id为字符串，解析型号
     cur.execute("SELECT asset_id, name, model FROM asset_info ORDER BY name")
     assets = cur.fetchall()
+    # 用字典存储，key统一为字符串，方便匹配
+    asset_map = {}
     for asset in assets:
+        # 统一asset_id为字符串，解决数字/字符串不匹配问题
+        aid = str(asset["asset_id"])
         model_str = asset.get("model", "")
-        # 解析原始型号，去除分类后缀
-        asset["model_origin"] = model_str.split("|")[0] if "|" in model_str else (model_str if "-" not in model_str else "无")
-    # 加载记录
+        # 解析原始型号
+        if "|" in model_str:
+            model_origin = model_str.split("|")[0]
+        elif "-" in model_str:
+            model_origin = "无"
+        else:
+            model_origin = model_str
+        asset_map[aid] = {
+            "name": asset["name"],
+            "model_origin": model_origin
+        }
+        # 同时保留数组，用于前端搜索
+        asset["asset_id"] = aid
+        asset["model_origin"] = model_origin
+
+    # 2. 加载记录，统一asset_id为字符串
     cur.execute("SELECT * FROM record_info ORDER BY time DESC")
     records = cur.fetchall()
+    for record in records:
+        # 统一record的asset_id为字符串，和asset_map匹配
+        record["asset_id"] = str(record["asset_id"])
+
     db.close()
-    return render_template("record.html", records=records, system_name=SYSTEM_NAME, assets=assets)
+    # 传递asset_map给模板，直接匹配，100%成功
+    return render_template("record.html", records=records, system_name=SYSTEM_NAME, assets=assets, asset_map=asset_map)
 
 # 提交出入记录（完全不动）
 @app.route("/do_record", methods=["POST"])

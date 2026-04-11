@@ -6,63 +6,49 @@
     <title>{{ system_name }} - 出入记录</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Microsoft YaHei", sans-serif; }
-        body { background-color: #f5f7fa; padding: 15px; }
+        body { background: #f5f7fa; padding: 15px; }
         .container { max-width: 1400px; margin: 0 auto; }
         .header { background: #2980b9; color: #fff; padding: 18px 20px; border-radius: 12px 12px 0 0; text-align: center; }
-        .header h1 { font-size: 24px; font-weight: 600; }
         .nav { background: #fff; padding: 12px 20px; border-bottom: 1px solid #e1e8ed; display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
-        .nav a { text-decoration: none; color: #2c3e50; font-size: 15px; font-weight: 500; padding: 6px 0; border-bottom: 2px solid transparent; transition: all 0.3s; }
+        .nav a { text-decoration: none; color: #2c3e50; font-size: 15px; font-weight: 500; padding: 6px 0; border-bottom: 2px solid transparent; }
         .nav a.active { color: #2980b9; border-bottom-color: #2980b9; }
         .nav .logout { margin-left: auto; color: #e74c3c; }
         .content { background: #fff; padding: 20px; border-radius: 0 0 12px 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.05); }
-        .flash-message { padding: 10px 14px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; transition: opacity 0.5s; }
-        .flash-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .flash-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .flash-message { padding: 10px 14px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; }
+        .flash-success { background: #d4edda; color: #155724; }
+        .flash-error { background: #f8d7da; color: #721c24; }
         .form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; }
         .form-group { display: flex; flex-direction: column; gap: 6px; }
         .form-group label { color: #34495e; font-size: 14px; font-weight: 500; }
-        .form-group input, .form-group select { padding: 10px 14px; border: 1px solid #e1e8ed; border-radius: 8px; font-size: 14px; transition: border-color 0.3s; }
+        .form-group input, .form-group select { padding: 10px 14px; border: 1px solid #e1e8ed; border-radius: 8px; font-size: 14px; }
         .form-group input:focus, .form-group select:focus { outline: none; border-color: #2980b9; box-shadow: 0 0 0 3px rgba(41,128,185,0.1); }
-        /* 资产名称自动补全样式（显示型号） */
         .asset-select { position: relative; }
         .asset-list { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #e1e8ed; border-radius: 0 0 8px 8px; max-height: 150px; overflow-y: auto; z-index: 10; display: none; }
-        .asset-item { padding: 8px 14px; cursor: pointer; transition: background 0.2s; }
+        .asset-item { padding: 8px 14px; cursor: pointer; }
         .asset-item:hover { background: #f8f9fa; }
-        .return-days-group { display: flex; align-items: center; gap: 8px; }
-        .return-days-group input { flex: 1; }
-        .return-days-group span { color: #7f8c8d; font-size: 13px; }
-        .btn-submit { grid-column: 1 / -1; justify-self: center; padding: 12px 35px; background: #2980b9; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background-color 0.3s; }
-        .btn-submit:hover { background: #1a5276; }
-        .record-table { width: 100%; border-collapse: collapse; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 8px rgba(0,0,0,0.05); }
+        .btn-submit { grid-column: 1 / -1; justify-self: center; padding: 12px 35px; background: #2980b9; color: #fff; border: none; border-radius: 8px; cursor: pointer; }
+        .record-table { width: 100%; border-collapse: collapse; border-radius: 8px; overflow: hidden; }
         .record-table thead { background: #f8f9fa; }
-        .record-table th { padding: 12px 10px; text-align: center; color: #495057; font-weight: 600; font-size: 14px; border-bottom: 2px solid #e9ecef; }
-        .record-table td { padding: 12px 10px; text-align: center; color: #2c3e50; font-size: 14px; border-bottom: 1px solid #e9ecef; }
+        .record-table th, .record-table td { padding: 12px 10px; text-align: center; border-bottom: 1px solid #e9ecef; }
         .record-table tbody tr:hover { background: #f8f9fa; }
-        /* 操作类型字体颜色区分（领用红色，归还绿色，移除背景色） */
-        .type-borrow { color: #e74c3c; font-weight: 600; }
-        .type-return { color: #27ae60; font-weight: 600; }
-        /* 设备状态字体颜色 */
+        /* 操作类型字体：领用红色 归还绿色（加粗突出） */
+        .type-borrow { color: #e74c3c; font-weight: 700; font-size: 15px; }
+        .type-return { color: #27ae60; font-weight: 700; font-size: 15px; }
+        /* 归还时间绿色，领用预计时间红色 */
+        .return-time-borrow { color: #e74c3c; font-weight: 600; }
+        .return-time-return { color: #27ae60; font-weight: 600; }
         .status-normal { color: #27ae60; font-weight: 600; }
         .status-fault { color: #e74c3c; font-weight: 600; }
         .status-repair { color: #f39c12; font-weight: 600; }
-        .return-time-tag { color: #e74c3c; font-weight: 500; font-size: 13px; }
-        .purpose-text { color: #7f8c8d; }
-        .btn-delete { padding: 6px 14px; background: #e74c3c; color: #fff; border: none; border-radius: 6px; font-size: 13px; cursor: pointer; transition: background-color 0.3s; }
-        .btn-delete:hover { background: #c0392b; }
-        /* 响应式适配手机 */
+        .btn-delete { padding: 6px 14px; background: #e74c3c; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+        /* 响应式 */
         @media (max-width: 992px) { .form-grid { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 768px) { 
-            .form-grid { grid-template-columns: 1fr; } 
-            .record-table { display: block; overflow-x: auto; }
-            .nav { gap: 15px; }
-        }
+        @media (max-width: 768px) { .form-grid { grid-template-columns: 1fr; } .record-table { display: block; overflow-x: auto; } }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>{{ system_name }}</h1>
-        </div>
+        <div class="header"><h1>{{ system_name }}</h1></div>
         <div class="nav">
             <a href="/">资产列表</a>
             <a href="/record" class="active">出入记录</a>
@@ -72,25 +58,18 @@
         <div class="content">
             {% with messages = get_flashed_messages() %}
                 {% if messages %}
-                    <div class="flash-message {{ 'flash-success' if '成功' in messages[0] else 'flash-error' }}" id="flashMsg">
-                        {{ messages[0] }}
-                    </div>
+                    <div class="flash-message {{ 'flash-success' if '成功' in messages[0] else 'flash-error' }}">{{ messages[0] }}</div>
                 {% endif %}
             {% endwith %}
-
             <form method="post" action="/do_record" id="recordForm">
                 <div class="form-grid">
-                    <!-- 资产编号/名称选择（显示型号，区分同名称资产） -->
                     <div class="form-group asset-select">
                         <label>资产*</label>
-                        <input type="text" id="assetInput" required placeholder="输入资产编号/名称自动匹配">
+                        <input type="text" id="assetInput" required placeholder="输入编号/名称匹配（含型号）">
                         <input type="hidden" name="asset_id" id="assetId" required>
                         <div class="asset-list" id="assetList"></div>
                     </div>
-                    <div class="form-group">
-                        <label>操作人*</label>
-                        <input type="text" name="person" required placeholder="请输入操作人姓名">
-                    </div>
+                    <div class="form-group"><label>操作人*</label><input type="text" name="person" required placeholder="请输入操作人姓名"></div>
                     <div class="form-group">
                         <label>操作类型*</label>
                         <select name="type" required id="opType">
@@ -98,73 +77,44 @@
                             <option value="归还">归还</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label>数量*</label>
-                        <input type="number" name="quantity" value="1" min="1" required>
-                    </div>
-                    <!-- 预计归还天数：默认1天，归还时隐藏 -->
-                    <div class="form-group" id="returnDaysGroup">
-                        <label>预计归还天数*</label>
-                        <div class="return-days-group">
-                            <input type="number" name="return_days" value="1" min="1" required>
-                            <span>天</span>
-                        </div>
-                    </div>
-                    <!-- 用途：归还时隐藏 -->
-                    <div class="form-group" id="purposeGroup">
-                        <label>用途</label>
-                        <input type="text" name="purpose" placeholder="请输入领用用途">
-                    </div>
-                    <!-- 设备状态：归还时显示 -->
-                    <div class="form-group" id="statusGroup" style="display: none;">
-                        <label>设备状态*</label>
+                    <div class="form-group"><label>数量*</label><input type="number" name="quantity" value="1" min="1" required></div>
+                    <div class="form-group" id="returnDaysGroup"><label>预计归还天数*</label><input type="number" name="return_days" value="1" min="1" required></div>
+                    <div class="form-group" id="purposeGroup"><label>领用用途</label><input type="text" name="purpose" placeholder="请输入领用用途"></div>
+                    <div class="form-group" id="statusGroup" style="display: none;"><label>设备状态*</label>
                         <select name="device_status" required>
                             <option value="正常">正常</option>
                             <option value="故障">故障</option>
                             <option value="维修中">维修中</option>
                         </select>
                     </div>
-                    <div class="form-group"></div>
-                    <div class="form-group"></div>
-                    <div class="form-group"></div>
+                    <div class="form-group"></div><div class="form-group"></div>
                     <button type="submit" class="btn-submit">提交操作</button>
                 </div>
             </form>
-
             <table class="record-table">
                 <thead>
                     <tr>
-                        <th>记录ID</th>
-                        <th>资产</th>
-                        <th>操作人</th>
-                        <th>操作类型</th>
-                        <th>数量</th>
-                        <th>操作时间</th>
-                        <th>用途/状态</th>
-                        <th>（预计）归还时间</th>
-                        <th>操作</th>
+                        <th>记录ID</th><th>资产（编号-名称-型号）</th><th>操作人</th><th>操作类型</th><th>数量</th>
+                        <th>操作时间</th><th>用途/设备状态</th><th>（预计）归还时间</th><th>操作</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for record in records %}
                     {% set purpose_str = record.purpose or '' %}
-                    {% set purpose_origin = purpose_str %}
-                    {% set return_time = '无' %}
-                    {% set device_status = '' %}
-                    {% set asset_id = record.asset_id %}
-                    {% set asset_name = '' %}
-                    {% set asset_model = '' %}
-                    {# 预存资产信息，用于显示资产列（编号（名称-型号）） #}
+                    {% set purpose_origin, return_time, device_status = purpose_str, '无', '' %}
+                    {% set op_type = record.type %}
+                    <!-- 匹配资产名称和型号 -->
+                    {% set asset_name, asset_model = '未知资产', '无' %}
                     {% for asset in assets %}
-                        {% if asset.asset_id == asset_id %}
+                        {% if asset.asset_id == record.asset_id %}
                             {% set asset_name = asset.name %}
                             {% set asset_model = asset.model_origin %}
                         {% endif %}
                     {% endfor %}
-                    {# 解析预计归还时间/设备状态 #}
+                    <!-- 解析归还时间/设备状态 -->
                     {% if '预计归还：' in purpose_str %}
                         {% if '|' in purpose_str %}
-                            {% set parts = purpose_str.split('|', 1) %}
+                            {% set parts = purpose_str.split('|',1) %}
                             {% set purpose_origin = parts[0] or '领用' %}
                             {% set return_time = parts[1].replace('预计归还：', '') %}
                         {% else %}
@@ -176,33 +126,20 @@
                         {% set purpose_origin = '' %}
                         {% set return_time = record.time %}
                     {% endif %}
-                    {# 设备状态样式映射 #}
-                    {% set status_class = 'status-normal' if device_status == '正常' else 'status-fault' if device_status == '故障' else 'status-repair' if device_status == '维修中' else '' %}
+                    {% set status_class = 'status-normal' if device_status == '正常' else 'status-fault' if device_status == '故障' else 'status-repair' %}
+                    {% set return_time_class = 'return-time-borrow' if op_type == '领用' else 'return-time-return' %}
                     <tr>
                         <td>{{ record.id }}</td>
-                        <!-- 资产列：显示编号（名称-型号），无-无 -->
-                        <td>{{ asset_id }}（{{ asset_name }}-{{ asset_model or '无' }}）</td>
+                        <!-- 资产列：完整显示 编号-名称-型号 -->
+                        <td>{{ record.asset_id }} - {{ asset_name }} - {{ asset_model }}</td>
                         <td>{{ record.person }}</td>
-                        <!-- 操作类型字体颜色：领用红色，归还绿色 -->
-                        <td class="{{ 'type-borrow' if record.type == '领用' else 'type-return' }}">{{ record.type }}</td>
+                        <!-- 操作类型：领用红 归还绿 -->
+                        <td class="{{ 'type-borrow' if op_type == '领用' else 'type-return' }}">{{ op_type }}</td>
                         <td>{{ record.quantity }}</td>
                         <td>{{ record.time }}</td>
-                        <!-- 归还时仅显示设备状态，移除归还（） -->
-                        <td class="purpose-text">
-                            {% if device_status %}
-                                <span class="{{ status_class }}">{{ device_status }}</span>
-                            {% else %}
-                                {{ purpose_origin or '未填写' }}
-                            {% endif %}
-                        </td>
-                        <!-- （预计）归还时间：领用显示预计，归还显示实际 -->
-                        <td>
-                            {% if return_time != '无' %}
-                                <span class="return-time-tag">{{ return_time }}</span>
-                            {% else %}
-                                无
-                            {% endif %}
-                        </td>
+                        <td>{% if device_status %}<span class="{{ status_class }}">{{ device_status }}</span>{% else %}{{ purpose_origin or '未填写' }}{% endif %}</td>
+                        <!-- 归还时间：领用红 归还绿 -->
+                        <td class="{{ return_time_class }}">{{ return_time if return_time != '无' else '无' }}</td>
                         <td>
                             <form method="post" action="/delete_record" onsubmit="return confirm('确定删除该记录并恢复库存？')" style="display:inline;">
                                 <input type="hidden" name="record_id" value="{{ record.id }}">
@@ -215,16 +152,9 @@
             </table>
         </div>
     </div>
-
     <script>
-        // 资产数据（用于自动补全，显示型号）
-        const assets = [
-            {% for asset in assets %}
-            { id: "{{ asset.asset_id }}", name: "{{ asset.name }}", model: "{{ asset.model_origin }}" },
-            {% endfor %}
-        ];
-
-        // 元素获取
+        // 资产数据
+        const assets = [{% for asset in assets %}{ id: "{{ asset.asset_id }}", name: "{{ asset.name }}", model: "{{ asset.model_origin }}" },{% endfor %}];
         const assetInput = document.getElementById('assetInput');
         const assetId = document.getElementById('assetId');
         const assetList = document.getElementById('assetList');
@@ -232,111 +162,46 @@
         const returnDaysGroup = document.getElementById('returnDaysGroup');
         const purposeGroup = document.getElementById('purposeGroup');
         const statusGroup = document.getElementById('statusGroup');
-
-        // 资产自动补全（显示型号，区分同名称资产）
-        function filterAssets(query) {
-            query = query.toLowerCase();
-            return assets.filter(a => 
-                a.id.toLowerCase().includes(query) || 
-                a.name.toLowerCase().includes(query) ||
-                `${a.id} - ${a.name}（${a.model}）`.toLowerCase().includes(query)
-            );
-        }
-
-        // 渲染资产列表（显示型号）
-        function renderAssetList(filtered) {
+        // 资产自动匹配
+        assetInput.addEventListener('input', function() {
+            const query = this.value.trim().toLowerCase();
             assetList.innerHTML = '';
-            if (filtered.length === 0) {
-                assetList.style.display = 'none';
-                return;
-            }
+            if (!query) { assetList.style.display = 'none'; assetId.value = ''; return; }
+            const filtered = assets.filter(a => a.id.toLowerCase().includes(query) || a.name.toLowerCase().includes(query));
+            if (filtered.length === 0) { assetList.style.display = 'none'; return; }
             filtered.forEach(a => {
                 const item = document.createElement('div');
                 item.className = 'asset-item';
-                item.textContent = `${a.id} - ${a.name}（${a.model}）`;
+                item.textContent = `${a.id} - ${a.name} - ${a.model}`;
                 item.dataset.id = a.id;
-                item.addEventListener('click', function() {
-                    assetInput.value = `${a.id} - ${a.name}（${a.model}）`;
+                item.onclick = () => {
+                    assetInput.value = item.textContent;
                     assetId.value = a.id;
                     assetList.style.display = 'none';
-                });
+                };
                 assetList.appendChild(item);
             });
             assetList.style.display = 'block';
-        }
-
-        // 输入事件监听
-        assetInput.addEventListener('input', function() {
-            const query = this.value.trim();
-            if (query) {
-                const filtered = filterAssets(query);
-                renderAssetList(filtered);
-                // 自动填充资产ID（如果唯一匹配）
-                if (filtered.length === 1) {
-                    assetId.value = filtered[0].id;
-                } else {
-                    // 尝试从输入中提取编号
-                    const idMatch = query.match(/^(\d+)\s*-?\s*/);
-                    if (idMatch) {
-                        const matched = assets.find(a => a.id === idMatch[1]);
-                        if (matched) {
-                            assetId.value = matched.id;
-                        } else {
-                            assetId.value = '';
-                        }
-                    } else {
-                        // 按名称匹配
-                        const matched = assets.find(a => a.name.toLowerCase() === query.toLowerCase());
-                        if (matched) {
-                            assetId.value = matched.id;
-                        } else {
-                            assetId.value = '';
-                        }
-                    }
-                }
-            } else {
-                assetList.style.display = 'none';
-                assetId.value = '';
-            }
         });
-
-        // 点击外部关闭列表
-        document.addEventListener('click', function(e) {
-            if (!assetInput.contains(e.target) && !assetList.contains(e.target)) {
-                assetList.style.display = 'none';
-            }
-        });
-
-        // 操作类型切换：显示/隐藏字段
+        document.addEventListener('click', e => { if (!assetInput.contains(e.target) && !assetList.contains(e.target)) assetList.style.display = 'none'; });
+        // 操作类型切换
         function updateFields() {
             if (opType.value === '领用') {
                 returnDaysGroup.style.display = 'flex';
                 purposeGroup.style.display = 'flex';
                 statusGroup.style.display = 'none';
-                returnDaysGroup.querySelector('input').setAttribute('required', 'required');
-                statusGroup.querySelector('select').removeAttribute('required');
             } else {
                 returnDaysGroup.style.display = 'none';
                 purposeGroup.style.display = 'none';
                 statusGroup.style.display = 'flex';
-                returnDaysGroup.querySelector('input').removeAttribute('required');
-                statusGroup.querySelector('select').setAttribute('required', 'required');
             }
         }
-
-        // 初始状态
         updateFields();
         opType.addEventListener('change', updateFields);
-
         // 提示框自动消失
-        const flashMsg = document.getElementById('flashMsg');
+        const flashMsg = document.querySelector('.flash-message');
         if (flashMsg) {
-            setTimeout(() => {
-                flashMsg.style.opacity = '0';
-                setTimeout(() => {
-                    flashMsg.style.display = 'none';
-                }, 500);
-            }, 1500);
+            setTimeout(() => { flashMsg.style.opacity = 0; setTimeout(() => flashMsg.remove(), 500); }, 1500);
         }
     </script>
 </body>

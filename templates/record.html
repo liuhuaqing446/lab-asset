@@ -122,7 +122,7 @@
                     {% set op_type = record.type %}
                     {% set purpose_str = record.purpose or '' %}
 
-                    {# 🔥 100%精准匹配资产，彻底解决未知资产 #}
+                    {# 100%精准匹配资产，彻底解决未知资产 #}
                     {% set asset_name = '未知资产' %}
                     {% set asset_model = '无' %}
                     {% for asset in assets %}
@@ -132,7 +132,7 @@
                         {% endif %}
                     {% endfor %}
 
-                    {# 🔥 解析用途/状态，彻底解决ID40显示问题 #}
+                    {# 解析用途/状态，彻底解决混合显示问题 #}
                     {% set purpose_origin = '' %}
                     {% set return_time = '无' %}
                     {% set device_status = '' %}

@@ -23,7 +23,7 @@
         .form-group label { color: #34495e; font-size: 14px; font-weight: 500; }
         .form-group input, .form-group select { padding: 10px 14px; border: 1px solid #e1e8ed; border-radius: 8px; font-size: 14px; transition: border-color 0.3s; }
         .form-group input:focus, .form-group select:focus { outline: none; border-color: #2980b9; box-shadow: 0 0 0 3px rgba(41,128,185,0.1); }
-        /* 资产名称自动补全样式 */
+        /* 资产名称自动补全样式（显示型号） */
         .asset-select { position: relative; }
         .asset-list { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #e1e8ed; border-radius: 0 0 8px 8px; max-height: 150px; overflow-y: auto; z-index: 10; display: none; }
         .asset-item { padding: 8px 14px; cursor: pointer; transition: background 0.2s; }
@@ -38,8 +38,8 @@
         .record-table th { padding: 12px 10px; text-align: center; color: #495057; font-weight: 600; font-size: 14px; border-bottom: 2px solid #e9ecef; }
         .record-table td { padding: 12px 10px; text-align: center; color: #2c3e50; font-size: 14px; border-bottom: 1px solid #e9ecef; }
         .record-table tbody tr:hover { background: #f8f9fa; }
-        /* 操作类型字体颜色区分（移除背景色） */
-        .type-borrow { color: #e67e22; font-weight: 600; }
+        /* 操作类型字体颜色区分（领用红色，归还绿色，移除背景色） */
+        .type-borrow { color: #e74c3c; font-weight: 600; }
         .type-return { color: #27ae60; font-weight: 600; }
         /* 设备状态字体颜色 */
         .status-normal { color: #27ae60; font-weight: 600; }
@@ -80,7 +80,7 @@
 
             <form method="post" action="/do_record" id="recordForm">
                 <div class="form-grid">
-                    <!-- 资产编号/名称选择（修复直接输入报错） -->
+                    <!-- 资产编号/名称选择（显示型号，区分同名称资产） -->
                     <div class="form-group asset-select">
                         <label>资产*</label>
                         <input type="text" id="assetInput" required placeholder="输入资产编号/名称自动匹配">
@@ -141,7 +141,7 @@
                         <th>数量</th>
                         <th>操作时间</th>
                         <th>用途/状态</th>
-                        <th>预计归还时间</th>
+                        <th>（预计）归还时间</th>
                         <th>操作</th>
                     </tr>
                 </thead>
@@ -154,17 +154,13 @@
                     {% set asset_id = record.asset_id %}
                     {% set asset_name = '' %}
                     {% set asset_model = '' %}
-                    {# 预存资产信息，用于显示资产列 #}
+                    {# 预存资产信息，用于显示资产列（编号（名称-型号）） #}
                     {% for asset in assets %}
                         {% if asset.asset_id == asset_id %}
                             {% set asset_name = asset.name %}
-                            {% set asset_model = asset.model %}
+                            {% set asset_model = asset.model_origin %}
                         {% endif %}
                     {% endfor %}
-                    {# 解析型号（移除分类/来源后缀） #}
-                    {% if '|' in asset_model %}
-                        {% set asset_model = asset_model.split('|')[0] %}
-                    {% endif %}
                     {# 解析预计归还时间/设备状态 #}
                     {% if '预计归还：' in purpose_str %}
                         {% if '|' in purpose_str %}
@@ -176,28 +172,37 @@
                             {% set purpose_origin = '领用' %}
                         {% endif %}
                     {% elif '设备状态：' in purpose_str %}
-                        {% if '|' in purpose_str %}
-                            {% set parts = purpose_str.split('|', 1) %}
-                            {% set purpose_origin = parts[0] or '归还' %}
-                            {% set device_status = parts[1].replace('设备状态：', '') %}
-                        {% else %}
-                            {% set device_status = purpose_str.replace('设备状态：', '') %}
-                            {% set purpose_origin = '归还' %}
-                        {% endif %}
+                        {% set device_status = purpose_str.replace('设备状态：', '') %}
+                        {% set purpose_origin = '' %}
+                        {% set return_time = record.time %}
                     {% endif %}
                     {# 设备状态样式映射 #}
                     {% set status_class = 'status-normal' if device_status == '正常' else 'status-fault' if device_status == '故障' else 'status-repair' if device_status == '维修中' else '' %}
                     <tr>
                         <td>{{ record.id }}</td>
-                        <!-- 资产列：显示编号（名称-型号） -->
+                        <!-- 资产列：显示编号（名称-型号），无-无 -->
                         <td>{{ asset_id }}（{{ asset_name }}-{{ asset_model or '无' }}）</td>
                         <td>{{ record.person }}</td>
-                        <!-- 操作类型字体颜色区分 -->
+                        <!-- 操作类型字体颜色：领用红色，归还绿色 -->
                         <td class="{{ 'type-borrow' if record.type == '领用' else 'type-return' }}">{{ record.type }}</td>
                         <td>{{ record.quantity }}</td>
                         <td>{{ record.time }}</td>
-                        <td class="purpose-text">{{ purpose_origin or '未填写' }}{% if device_status %}（<span class="{{ status_class }}">{{ device_status }}</span>）{% endif %}</td>
-                        <td>{% if return_time != '无' %}<span class="return-time-tag">{{ return_time }}</span>{% else %}无{% endif %}</td>
+                        <!-- 归还时仅显示设备状态，移除归还（） -->
+                        <td class="purpose-text">
+                            {% if device_status %}
+                                <span class="{{ status_class }}">{{ device_status }}</span>
+                            {% else %}
+                                {{ purpose_origin or '未填写' }}
+                            {% endif %}
+                        </td>
+                        <!-- （预计）归还时间：领用显示预计，归还显示实际 -->
+                        <td>
+                            {% if return_time != '无' %}
+                                <span class="return-time-tag">{{ return_time }}</span>
+                            {% else %}
+                                无
+                            {% endif %}
+                        </td>
                         <td>
                             <form method="post" action="/delete_record" onsubmit="return confirm('确定删除该记录并恢复库存？')" style="display:inline;">
                                 <input type="hidden" name="record_id" value="{{ record.id }}">
@@ -212,10 +217,10 @@
     </div>
 
     <script>
-        // 资产数据（用于自动补全，修复直接输入报错）
+        // 资产数据（用于自动补全，显示型号）
         const assets = [
             {% for asset in assets %}
-            { id: "{{ asset.asset_id }}", name: "{{ asset.name }}", model: "{{ asset.model.split('|')[0] if '|' in asset.model else asset.model }}" },
+            { id: "{{ asset.asset_id }}", name: "{{ asset.name }}", model: "{{ asset.model_origin }}" },
             {% endfor %}
         ];
 
@@ -228,17 +233,17 @@
         const purposeGroup = document.getElementById('purposeGroup');
         const statusGroup = document.getElementById('statusGroup');
 
-        // 资产自动补全（修复直接输入报错：支持输入名称/编号自动匹配）
+        // 资产自动补全（显示型号，区分同名称资产）
         function filterAssets(query) {
             query = query.toLowerCase();
             return assets.filter(a => 
                 a.id.toLowerCase().includes(query) || 
                 a.name.toLowerCase().includes(query) ||
-                `${a.id} - ${a.name}`.toLowerCase().includes(query)
+                `${a.id} - ${a.name}（${a.model}）`.toLowerCase().includes(query)
             );
         }
 
-        // 渲染资产列表
+        // 渲染资产列表（显示型号）
         function renderAssetList(filtered) {
             assetList.innerHTML = '';
             if (filtered.length === 0) {
@@ -248,10 +253,10 @@
             filtered.forEach(a => {
                 const item = document.createElement('div');
                 item.className = 'asset-item';
-                item.textContent = `${a.id} - ${a.name}`;
+                item.textContent = `${a.id} - ${a.name}（${a.model}）`;
                 item.dataset.id = a.id;
                 item.addEventListener('click', function() {
-                    assetInput.value = `${a.id} - ${a.name}`;
+                    assetInput.value = `${a.id} - ${a.name}（${a.model}）`;
                     assetId.value = a.id;
                     assetList.style.display = 'none';
                 });
@@ -263,7 +268,6 @@
         // 输入事件监听
         assetInput.addEventListener('input', function() {
             const query = this.value.trim();
-            // 自动匹配资产
             if (query) {
                 const filtered = filterAssets(query);
                 renderAssetList(filtered);

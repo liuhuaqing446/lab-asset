@@ -2,8 +2,11 @@ from flask import Flask, render_template, request, flash, redirect, session, jso
 import pymysql
 from datetime import datetime, timedelta
 import os
+import requests
+import threading
+import time
 
-# ====================== 数据库配置（完全匹配阿里云RDS，无需修改）======================
+# ====================== 数据库配置（匹配阿里云RDS，无需修改）======================
 DB_CONFIG = {
     "host": "rm-bp1084h4bg6153o8veo.mysql.rds.aliyuncs.com",
     "port": 60030,
@@ -14,35 +17,53 @@ DB_CONFIG = {
     "cursorclass": pymysql.cursors.DictCursor
 }
 
-# ====================== 系统配置（严格按要求）=====================
+# ====================== 系统配置 ======================
 ADMIN_USER = "admin"
 ADMIN_PWD = "lab123456"
 SYSTEM_NAME = "AEIM实验室管理系统"
-# 设备分类（3类）：机械类、电气类、其他类
 CATEGORIES = ["机械类", "电气类", "其他类"]
-# 设备来源（3类）：自购、企业、学校
 SOURCES = ["自购", "企业", "学校"]
-# 默认预计归还天数：1天
 DEFAULT_RETURN_DAYS = 1
+# 定时唤醒配置
+WAKE_UP_INTERVAL = 600  # 唤醒间隔（秒），10分钟=600秒，可修改
+SELF_URL = os.environ.get('SELF_URL', 'https://lab-asset.onrender.com')  # 替换为你的Render项目地址
 
 app = Flask(__name__)
-app.secret_key = "lab_asset_2026_secure_v4"
+app.secret_key = "lab_asset_2026_secure_v5"
+
+# ====================== 定时唤醒服务（核心新增）======================
+def wake_up_service():
+    """定时请求自身健康检查接口，防止Render休眠"""
+    while True:
+        try:
+            # 发送GET请求到/health接口
+            response = requests.get(f"{SELF_URL}/health", timeout=10)
+            if response.status_code == 200:
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 服务唤醒成功，状态码：{response.status_code}")
+            else:
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 服务唤醒失败，状态码：{response.status_code}")
+        except Exception as e:
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 唤醒请求异常：{str(e)}")
+        # 间隔指定时间后再次执行
+        time.sleep(WAKE_UP_INTERVAL)
+
+# 启动后台定时唤醒线程（仅在生产环境/Render运行时启动）
+if os.environ.get('PORT'):  # Render会自动设置PORT环境变量，本地运行不触发
+    threading.Thread(target=wake_up_service, daemon=True).start()
+    print(f"✅ 定时唤醒服务已启动，间隔{WAKE_UP_INTERVAL/60}分钟，目标地址：{SELF_URL}")
 
 # ====================== 基础工具函数 ======================
-# 健康检查接口（配合UptimeRobot防休眠）
 @app.route('/health')
 def health_check():
+    """健康检查接口，用于定时唤醒和Render状态检测"""
     return 'OK', 200
 
-# 获取北京时间（UTC+8）
 def get_beijing_time():
     return datetime.utcnow() + timedelta(hours=8)
 
-# 格式化北京时间为字符串
 def format_beijing_time(dt):
     return dt.strftime("%Y-%m-%d %H:%M:%S")
 
-# 数据库连接
 def get_db():
     return pymysql.connect(**DB_CONFIG)
 
@@ -71,7 +92,7 @@ def logout():
     session.clear()
     return redirect("/login")
 
-# ====================== 资产列表（首页，状态字体高亮+移除占位符）======================
+# ====================== 资产列表 ======================
 @app.route("/")
 def index():
     db = get_db()
@@ -82,7 +103,7 @@ def index():
     return render_template("index.html", assets=assets, system_name=SYSTEM_NAME,
                            categories=CATEGORIES, sources=SOURCES)
 
-# ====================== 新增资产（无改动，兼容旧表）======================
+# ====================== 新增资产 ======================
 @app.route("/add_asset", methods=["POST"])
 def add_asset():
     form_data = request.form
@@ -125,7 +146,7 @@ def add_asset():
         db.close()
     return redirect("/")
 
-# ====================== 删除资产（无改动）======================
+# ====================== 删除资产 ======================
 @app.route("/delete_asset", methods=["POST"])
 def delete_asset():
     asset_id = request.form["asset_id"]
@@ -143,30 +164,35 @@ def delete_asset():
         db.close()
     return redirect("/")
 
-# ====================== 出入记录页（支持资产名称查询+自动补全）======================
+# ====================== 出入记录页 ======================
 @app.route("/record")
 def record():
     db = get_db()
     cur = db.cursor()
-    # 获取所有资产，用于前端名称自动补全
     cur.execute("SELECT asset_id, name, model FROM asset_info ORDER BY name")
     assets = cur.fetchall()
+    # 解析资产型号
+    for asset in assets:
+        model_str = asset.get("model", "")
+        if "|" in model_str:
+            asset["model_origin"] = model_str.split("|")[0]
+        else:
+            asset["model_origin"] = model_str if "-" not in model_str else "无"
     cur.execute("SELECT * FROM record_info ORDER BY time DESC")
     records = cur.fetchall()
     db.close()
     return render_template("record.html", records=records, system_name=SYSTEM_NAME, assets=assets)
 
-# ====================== 提交出入记录（核心：修复直接输入报错+默认1天/归还状态）======================
+# ====================== 提交出入记录 ======================
 @app.route("/do_record", methods=["POST"])
 def do_record():
     form_data = request.form
     required = ["asset_id", "person", "quantity", "type"]
-    # 领用时预计归还天数必填，默认1天
     if form_data.get("type") == "领用" and not form_data.get("return_days"):
         form_data["return_days"] = str(DEFAULT_RETURN_DAYS)
     for key in required:
         if not form_data.get(key):
-            flash(f"⚠️ {{'asset_id':'资产编号','person':'操作人','quantity':'数量','type':'操作类型'}}[{key}] 为必填项！")
+            flash(f"⚠️ {key}为必填项！")
             return redirect("/record")
 
     asset_id = form_data["asset_id"]
@@ -175,7 +201,6 @@ def do_record():
     quantity = int(form_data["quantity"])
     return_days = int(form_data.get("return_days", DEFAULT_RETURN_DAYS)) if op_type == "领用" else 0
     purpose_origin = form_data.get("purpose", "")
-    # 新增：归还状态
     device_status = form_data.get("device_status", "正常") if op_type == "归还" else ""
 
     db = get_db()
@@ -221,8 +246,8 @@ def do_record():
             if new_qty > total_qty:
                 flash(f"⚠️ 归还后库存({new_qty})超过总数量({total_qty})，无法操作")
                 return redirect("/record")
-            # 归还时：用途+设备状态拼接
-            purpose_with_return = f"{purpose_origin}|设备状态：{device_status}" if purpose_origin else f"设备状态：{device_status}"
+            # 归还时仅存储设备状态
+            purpose_with_return = f"设备状态：{device_status}"
 
         new_status = "借出" if new_qty == 0 else "在库"
         cur.execute("""
@@ -250,7 +275,7 @@ def do_record():
         db.close()
     return redirect("/record")
 
-# ====================== 删除记录（无改动）======================
+# ====================== 删除记录 ======================
 @app.route("/delete_record", methods=["POST"])
 def delete_record():
     record_id = request.form["record_id"]
@@ -299,12 +324,12 @@ def delete_record():
         db.close()
     return redirect("/record")
 
-# ====================== 资产查询页（支持名称查询+移除资产ID）======================
+# ====================== 资产查询页 ======================
 @app.route("/query")
 def query():
     return render_template("query.html", system_name=SYSTEM_NAME, categories=CATEGORIES)
 
-# ====================== 资产查询API（核心：修复查询逻辑+名称模糊查询）======================
+# ====================== 资产查询API（编号+名称+分类）======================
 @app.route("/api/asset", methods=["POST"])
 def api_asset():
     req_data = request.json
@@ -315,13 +340,12 @@ def api_asset():
     db = get_db()
     cur = db.cursor()
 
-    # 多条件查询：编号/名称/分类（修复查询逻辑，支持单独/组合查询）
+    # 多条件组合查询：编号+名称+分类
     query_sql = "SELECT * FROM asset_info WHERE 1=1"
     params = []
-
     if asset_id:
-        query_sql += " AND asset_id = %s"
-        params.append(asset_id)
+        query_sql += " AND asset_id LIKE %s"
+        params.append(f"%{asset_id}%")
     if asset_name:
         query_sql += " AND name LIKE %s"
         params.append(f"%{asset_name}%")

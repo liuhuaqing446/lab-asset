@@ -15,35 +15,144 @@
         .nav a.active { color: #2980b9; border-bottom-color: #2980b9; }
         .nav .logout { margin-left: auto; color: #e74c3c; }
         .content { background: #fff; padding: 20px; border-radius: 0 0 12px 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.05); }
-        .query-form { display: flex; gap: 12px; align-items: flex-end; margin-bottom: 25px; flex-wrap: wrap; }
-        .form-group { display: flex; flex-direction: column; gap: 6px; }
-        .form-group label { color: #34495e; font-size: 14px; font-weight: 500; }
-        .form-group input, .form-group select { padding: 10px 14px; border: 1px solid #e1e8ed; border-radius: 8px; font-size: 14px; width: 200px; transition: border-color 0.3s; }
-        .form-group input:focus, .form-group select:focus { outline: none; border-color: #2980b9; box-shadow: 0 0 0 3px rgba(41,128,185,0.1); }
-        .btn-query { padding: 10px 28px; background: #2980b9; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background-color 0.3s; }
-        .btn-query:hover { background: #1a5276; }
-        .result-card { background: #f8f9fa; border-radius: 8px; padding: 18px; margin-bottom: 18px; border-left: 4px solid #2980b9; }
-        .result-card h3 { color: #2c3e50; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 18px; }
-        .asset-info { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 15px; }
-        .info-item { color: #34495e; font-size: 14px; }
-        .info-item span { font-weight: 600; color: #2980b9; margin-right: 5px; }
-        .category-tag { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: #fff; }
-        .category-1 { background: #3498db; } /* 机械类 */
-        .category-2 { background: #e67e22; } /* 电气类 */
-        .category-3 { background: #7f8c8d; } /* 其他类 */
-        .no-data { text-align: center; color: #7f8c8d; font-size: 16px; padding: 40px 0; }
-        .unreturned-title { color: #e74c3c; font-size: 15px; margin: 15px 0 10px; font-weight: 600; }
-        .unreturned-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        .unreturned-table th { background: #e9ecef; padding: 10px 12px; text-align: center; font-size: 14px; color: #495057; border-bottom: 2px solid #dee2e6; }
-        .unreturned-table td { padding: 10px 12px; text-align: center; font-size: 14px; color: #2c3e50; border-bottom: 1px solid #dee2e6; }
-        .return-time { color: #e74c3c; font-weight: 500; }
+
+        /* 查询表单布局（电脑横排 / 手机竖排） */
+        .query-form {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 180px;
+        }
+        .form-group label {
+            color: #34495e;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .form-group input,
+        .form-group select {
+            padding: 10px 14px;
+            border: 1px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #2980b9;
+            box-shadow: 0 0 0 3px rgba(41,128,185,0.1);
+        }
+        .btn-query {
+            padding: 10px 28px;
+            background: #2980b9;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background-color 0.3s;
+        }
+        .btn-query:hover {
+            background: #1a5276;
+        }
+
+        /* 查询结果卡片 */
+        .result-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 18px;
+            margin-bottom: 18px;
+            border-left: 4px solid #2980b9;
+        }
+        .result-card h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            font-size: 18px;
+        }
+        .asset-info {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+        .info-item {
+            color: #34495e;
+            font-size: 14px;
+        }
+        .info-item span {
+            font-weight: 600;
+            color: #2980b9;
+            margin-right: 5px;
+        }
+        .category-tag {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #fff;
+        }
+        .category-1 { background: #3498db; }
+        .category-2 { background: #e67e22; }
+        .category-3 { background: #7f8c8d; }
+        .no-data {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 16px;
+            padding: 40px 0;
+        }
+        .unreturned-title {
+            color: #e74c3c;
+            font-size: 15px;
+            margin: 15px 0 10px;
+            font-weight: 600;
+        }
+        .unreturned-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .unreturned-table th {
+            background: #e9ecef;
+            padding: 10px 12px;
+            text-align: center;
+            font-size: 14px;
+            color: #495057;
+            border-bottom: 2px solid #dee2e6;
+        }
+        .unreturned-table td {
+            padding: 10px 12px;
+            text-align: center;
+            font-size: 14px;
+            color: #2c3e50;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .return-time {
+            color: #e74c3c;
+            font-weight: 500;
+        }
         .status-in { color: #27ae60; font-weight: 700; }
         .status-out { color: #e74c3c; font-weight: 700; }
-        /* 响应式适配：电脑/平板/手机全兼容 */
-        @media (max-width: 992px) { .asset-info { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 768px) { 
-            .query-form { flex-direction: column; align-items: flex-start; }
-            .form-group input, .form-group select { width: 100%; }
+
+        /* 响应式：电脑 / 平板 / 手机全部完美适配 */
+        @media (max-width: 992px) {
+            .asset-info { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 768px) {
+            .query-form { flex-direction: column; align-items: stretch; }
+            .form-group { min-width: auto; }
             .asset-info { grid-template-columns: 1fr; }
             .unreturned-table { display: block; overflow-x: auto; }
             .nav { gap: 15px; }
@@ -62,11 +171,20 @@
             <a href="/logout" class="logout">退出登录</a>
         </div>
         <div class="content">
-            <!-- 移除编号/名称输入框，仅保留分类筛选查询 -->
+
+            <!-- 查询表单：编号 + 名称 + 分类 -->
             <form class="query-form" id="queryForm">
                 <div class="form-group">
-                    <label>设备分类筛选</label>
-                    <select id="categoryFilter" required>
+                    <label>资产编号</label>
+                    <input type="text" id="assetId" placeholder="请输入资产编号">
+                </div>
+                <div class="form-group">
+                    <label>资产名称</label>
+                    <input type="text" id="assetName" placeholder="请输入资产名称">
+                </div>
+                <div class="form-group">
+                    <label>设备分类</label>
+                    <select id="categoryFilter">
                         <option value="">全部分类</option>
                         {% for cate in categories %}
                         <option value="{{ cate }}">{{ cate }}</option>
@@ -76,50 +194,41 @@
                 <button type="submit" class="btn-query">查询资产</button>
             </form>
 
-            <!-- 查询结果展示区域 -->
+            <!-- 查询结果展示 -->
             <div id="resultArea"></div>
         </div>
     </div>
 
     <script>
-        // 分类标签样式映射
         const cateClassMap = {
             "机械类": "category-1",
             "电气类": "category-2",
             "其他类": "category-3"
         };
 
-        // 表单提交核心逻辑（仅按分类查询，禁用编号/名称）
+        // 查询提交（支持：编号 + 名称 + 分类）
         document.getElementById('queryForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            // 仅获取分类参数，移除编号/名称相关逻辑
-            const category = document.getElementById('categoryFilter').value;
+
+            const asset_id = document.getElementById('assetId').value.trim();
+            const asset_name = document.getElementById('assetName').value.trim();
+            const category = document.getElementById('categoryFilter').value.trim();
             const resultArea = document.getElementById('resultArea');
 
-            // 清空历史查询结果
             resultArea.innerHTML = '';
 
-            // 发送AJAX查询请求（仅传分类）
             fetch('/api/asset', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    asset_id: "",  // 空值，禁用编号查询
-                    asset_name: "", // 空值，禁用名称查询
-                    category: category
-                })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ asset_id, asset_name, category })
             })
             .then(res => res.json())
             .then(data => {
-                // 无数据/查询失败提示
                 if (!data.ok) {
                     resultArea.innerHTML = `<div class="no-data">${data.msg}</div>`;
                     return;
                 }
 
-                // 渲染查询结果卡片
                 let html = '';
                 data.data.forEach(item => {
                     const asset = item.asset;
@@ -127,7 +236,6 @@
                     const cateClass = cateClassMap[asset.category] || 'category-3';
                     const statusClass = asset.status === '在库' ? 'status-in' : 'status-out';
 
-                    // 资产基础信息卡片
                     html += `
                     <div class="result-card">
                         <h3>
@@ -145,7 +253,6 @@
                         </div>
                     `;
 
-                    // 未归还记录展示（操作人，标红提醒）
                     if (unreturned.length > 0) {
                         html += `
                             <div class="unreturned-title">⚠️ 未归还记录</div>
@@ -172,25 +279,18 @@
                                 </tr>
                             `;
                         });
-                        html += `
-                                </tbody>
-                            </table>
-                        `;
+                        html += `</tbody></table>`;
                     } else {
-                        // 无未归还记录绿色提示
-                        html += `<div style="color:#27ae60; font-size:14px; margin-top:10px;">✅ 该资产暂无未归还记录</div>`;
+                        html += `<div style="color:#27ae60; margin-top:10px;">✅ 该资产暂无未归还记录</div>`;
                     }
 
                     html += `</div>`;
                 });
 
-                // 插入渲染后的结果
                 resultArea.innerHTML = html;
             })
-            .catch(err => {
-                // 网络/接口错误提示
-                resultArea.innerHTML = `<div class="no-data">查询失败，请刷新页面重试</div>`;
-                console.error('查询接口错误：', err);
+            .catch(() => {
+                resultArea.innerHTML = `<div class="no-data">查询失败，请刷新重试</div>`;
             });
         });
     </script>

@@ -18,15 +18,15 @@ DB_CONFIG = {
 }
 
 # 系统配置
-ADMIN_USER = "admin"
-ADMIN_PWD = "lab123456"
+ADMIN_USER = "lab429"
+ADMIN_PWD = "123456"
 SYSTEM_NAME = "AEIM实验室管理系统"
 CATEGORIES = ["机械类", "电气类", "其他类"]
 SOURCES = ["自购", "企业", "学校"]
 DEFAULT_RETURN_DAYS = 1
 # 定时唤醒配置
-WAKE_UP_INTERVAL = 600
-SELF_URL = os.environ.get('SELF_URL', 'https://lab-asset.onrender.com')
+WAKE_UP_INTERVAL = 300
+SELF_URL = os.environ.get('SELF_URL', 'https://lab-asset-2.onrender.com')
 
 app = Flask(__name__)
 app.secret_key = "lab_asset_2026_final_secure"

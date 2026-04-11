@@ -143,41 +143,26 @@ def delete_asset():
     return redirect("/")
 
 # ==============================
-# ✅ 只修改这里：出入记录页（显示完整资产信息）
+# ✅ 仅修改此处：出入记录页（修复资产显示，其余不动）
 # ==============================
 @app.route("/record")
 def record():
     db = get_db()
     cur = db.cursor()
-    
-    # 加载完整资产信息（编号、名称、型号、分类、来源）
+    # 加载完整资产信息，用于模板匹配
     cur.execute("SELECT asset_id, name, model FROM asset_info ORDER BY name")
     assets = cur.fetchall()
     for asset in assets:
         model_str = asset.get("model", "")
+        # 解析原始型号，去除分类后缀
         asset["model_origin"] = model_str.split("|")[0] if "|" in model_str else (model_str if "-" not in model_str else "无")
-        
-        # 解析分类 & 来源
-        cat = "未分类"
-        src = "未知来源"
-        if "|" in model_str:
-            _, ext = model_str.split("|", 1)
-            if "-" in ext:
-                cat, src = ext.split("-", 1)
-        elif "-" in model_str:
-            cat, src = model_str.split("-", 1)
-        
-        asset["category"] = cat
-        asset["source"] = src
-
     # 加载记录
     cur.execute("SELECT * FROM record_info ORDER BY time DESC")
     records = cur.fetchall()
     db.close()
-    
     return render_template("record.html", records=records, system_name=SYSTEM_NAME, assets=assets)
 
-# 提交出入记录（不动）
+# 提交出入记录（完全不动）
 @app.route("/do_record", methods=["POST"])
 def do_record():
     form_data = request.form
@@ -239,7 +224,7 @@ def do_record():
         db.close()
     return redirect("/record")
 
-# 删除出入记录（不动）
+# 删除出入记录（完全不动）
 @app.route("/delete_record", methods=["POST"])
 def delete_record():
     record_id = request.form["record_id"]
@@ -274,12 +259,12 @@ def delete_record():
         db.close()
     return redirect("/record")
 
-# 查询页
+# 查询页（完全不动）
 @app.route("/query")
 def query():
     return render_template("query.html", system_name=SYSTEM_NAME, categories=CATEGORIES)
 
-# 查询API（单输入框：编号/名称通用，保留分类筛选）
+# 查询API（完全不动）
 @app.route("/api/asset", methods=["POST"])
 def api_asset():
     req_data = request.json

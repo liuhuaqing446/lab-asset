@@ -6,58 +6,43 @@
     <title>{{ system_name }} - 资产列表</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Microsoft YaHei", sans-serif; }
-        body { background-color: #f5f7fa; padding: 15px; }
+        body { background: #f5f7fa; padding: 15px; }
         .container { max-width: 1400px; margin: 0 auto; }
         .header { background: #2980b9; color: #fff; padding: 18px 20px; border-radius: 12px 12px 0 0; text-align: center; }
-        .header h1 { font-size: 24px; font-weight: 600; }
         .nav { background: #fff; padding: 12px 20px; border-bottom: 1px solid #e1e8ed; display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
-        .nav a { text-decoration: none; color: #2c3e50; font-size: 15px; font-weight: 500; padding: 6px 0; border-bottom: 2px solid transparent; transition: all 0.3s; }
+        .nav a { text-decoration: none; color: #2c3e50; font-size: 15px; font-weight: 500; padding: 6px 0; border-bottom: 2px solid transparent; }
         .nav a.active { color: #2980b9; border-bottom-color: #2980b9; }
         .nav .logout { margin-left: auto; color: #e74c3c; }
         .content { background: #fff; padding: 20px; border-radius: 0 0 12px 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.05); }
-        .flash-message { padding: 10px 14px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; transition: opacity 0.5s; }
-        .flash-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .flash-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .flash-message { padding: 10px 14px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; }
+        .flash-success { background: #d4edda; color: #155724; }
+        .flash-error { background: #f8d7da; color: #721c24; }
         .form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; }
         .form-group { display: flex; flex-direction: column; gap: 6px; }
         .form-group label { color: #34495e; font-size: 14px; font-weight: 500; }
-        .form-group input, .form-group select { padding: 10px 14px; border: 1px solid #e1e8ed; border-radius: 8px; font-size: 14px; transition: border-color 0.3s; }
+        .form-group input, .form-group select { padding: 10px 14px; border: 1px solid #e1e8ed; border-radius: 8px; font-size: 14px; }
         .form-group input:focus, .form-group select:focus { outline: none; border-color: #2980b9; box-shadow: 0 0 0 3px rgba(41,128,185,0.1); }
-        /* 彻底移除采购时间占位符 */
-        .form-group input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
-        .form-group input[type="date"]::-webkit-datetime-edit { padding: 0; }
-        .form-group input[type="date"] { position: relative; }
-        .btn-submit { grid-column: 1 / -1; justify-self: center; padding: 12px 35px; background: #2980b9; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background-color 0.3s; }
-        .btn-submit:hover { background: #1a5276; }
-        .asset-table { width: 100%; border-collapse: collapse; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 8px rgba(0,0,0,0.05); }
+        .btn-submit { grid-column: 1 / -1; justify-self: center; padding: 12px 35px; background: #2980b9; color: #fff; border: none; border-radius: 8px; cursor: pointer; }
+        .asset-table { width: 100%; border-collapse: collapse; border-radius: 8px; overflow: hidden; }
         .asset-table thead { background: #f8f9fa; }
-        .asset-table th { padding: 12px 10px; text-align: center; color: #495057; font-weight: 600; font-size: 14px; border-bottom: 2px solid #e9ecef; }
-        .asset-table td { padding: 12px 10px; text-align: center; color: #2c3e50; font-size: 14px; border-bottom: 1px solid #e9ecef; }
+        .asset-table th, .asset-table td { padding: 12px 10px; text-align: center; border-bottom: 1px solid #e9ecef; }
         .asset-table tbody tr:hover { background: #f8f9fa; }
-        /* 状态字体高亮：在库绿色，借出红色（严格移除背景色） */
-        .status-in { color: #27ae60; font-weight: 700; }
-        .status-out { color: #e74c3c; font-weight: 700; }
-        .category-tag { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: #fff; }
-        .category-1 { background: #3498db; } /* 机械类 */
-        .category-2 { background: #e67e22; } /* 电气类 */
-        .category-3 { background: #7f8c8d; } /* 其他类 */
-        .source-tag { color: #2980b9; font-weight: 500; }
-        .btn-delete { padding: 6px 14px; background: #e74c3c; color: #fff; border: none; border-radius: 6px; font-size: 13px; cursor: pointer; transition: background-color 0.3s; }
-        .btn-delete:hover { background: #c0392b; }
-        /* 响应式适配手机 */
+        /* 状态字体：在库绿色 借出红色（加粗突出） */
+        .status-in { color: #27ae60; font-weight: 700; font-size: 15px; }
+        .status-out { color: #e74c3c; font-weight: 700; font-size: 15px; }
+        .category-tag { display: inline-block; padding: 4px 8px; border-radius: 4px; color: #fff; font-size: 12px; }
+        .category-1 { background: #3498db; }
+        .category-2 { background: #e67e22; }
+        .category-3 { background: #7f8c8d; }
+        .btn-delete { padding: 6px 14px; background: #e74c3c; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+        /* 响应式 */
         @media (max-width: 992px) { .form-grid { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 768px) { 
-            .form-grid { grid-template-columns: 1fr; } 
-            .asset-table { display: block; overflow-x: auto; }
-            .nav { gap: 15px; }
-        }
+        @media (max-width: 768px) { .form-grid { grid-template-columns: 1fr; } .asset-table { display: block; overflow-x: auto; } }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>{{ system_name }}</h1>
-        </div>
+        <div class="header"><h1>{{ system_name }}</h1></div>
         <div class="nav">
             <a href="/" class="active">资产列表</a>
             <a href="/record">出入记录</a>
@@ -67,113 +52,58 @@
         <div class="content">
             {% with messages = get_flashed_messages() %}
                 {% if messages %}
-                    <div class="flash-message {{ 'flash-success' if '成功' in messages[0] else 'flash-error' }}" id="flashMsg">
-                        {{ messages[0] }}
-                    </div>
+                    <div class="flash-message {{ 'flash-success' if '成功' in messages[0] else 'flash-error' }}">{{ messages[0] }}</div>
                 {% endif %}
             {% endwith %}
-
             <form method="post" action="/add_asset">
                 <div class="form-grid">
-                    <div class="form-group">
-                        <label>资产编号*</label>
-                        <input type="text" name="asset_id" required placeholder="请输入资产编号">
-                    </div>
-                    <div class="form-group">
-                        <label>资产名称*</label>
-                        <input type="text" name="name" required placeholder="请输入资产名称">
-                    </div>
-                    <div class="form-group">
-                        <label>设备型号</label>
-                        <input type="text" name="model" placeholder="请输入设备型号">
-                    </div>
-                    <div class="form-group">
-                        <label>设备分类*</label>
+                    <div class="form-group"><label>资产编号*</label><input type="text" name="asset_id" required placeholder="请输入资产编号"></div>
+                    <div class="form-group"><label>资产名称*</label><input type="text" name="name" required placeholder="请输入资产名称"></div>
+                    <div class="form-group"><label>设备型号</label><input type="text" name="model" placeholder="请输入设备型号"></div>
+                    <div class="form-group"><label>设备分类*</label>
                         <select name="category" required>
-                            <option value="">请选择设备分类</option>
-                            {% for cate in categories %}
-                            <option value="{{ cate }}">{{ cate }}</option>
-                            {% endfor %}
+                            <option value="">请选择分类</option>
+                            {% for cate in categories %}<option value="{{ cate }}">{{ cate }}</option>{% endfor %}
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label>设备来源*</label>
+                    <div class="form-group"><label>设备来源*</label>
                         <select name="source" required>
-                            <option value="">请选择设备来源</option>
-                            {% for src in sources %}
-                            <option value="{{ src }}">{{ src }}</option>
-                            {% endfor %}
+                            <option value="">请选择来源</option>
+                            {% for src in sources %}<option value="{{ src }}">{{ src }}</option>{% endfor %}
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label>采购时间</label>
-                        <!-- 彻底移除占位符 -->
-                        <input type="date" name="purchase_time">
-                    </div>
-                    <div class="form-group">
-                        <label>存放位置</label>
-                        <input type="text" name="location" placeholder="请输入存放位置">
-                    </div>
-                    <div class="form-group">
-                        <label>总数量*</label>
-                        <input type="number" name="total_quantity" value="1" min="1" required>
-                    </div>
+                    <div class="form-group"><label>采购时间</label><input type="date" name="purchase_time"> <!-- 无占位符 --></div>
+                    <div class="form-group"><label>存放位置</label><input type="text" name="location" placeholder="请输入存放位置"></div>
+                    <div class="form-group"><label>总数量*</label><input type="number" name="total_quantity" value="1" min="1" required></div>
                     <div class="form-group"></div>
                     <button type="submit" class="btn-submit">新增资产</button>
                 </div>
             </form>
-
             <table class="asset-table">
                 <thead>
                     <tr>
-                        <th>资产编号</th>
-                        <th>资产名称</th>
-                        <th>设备型号</th>
-                        <th>设备分类</th>
-                        <th>设备来源</th>
-                        <th>采购时间</th>
-                        <th>存放位置</th>
-                        <th>总数量</th>
-                        <th>剩余数量</th>
-                        <th>当前状态</th>
-                        <th>操作</th>
+                        <th>资产编号</th><th>资产名称</th><th>设备型号</th><th>设备分类</th><th>设备来源</th>
+                        <th>采购时间</th><th>存放位置</th><th>总数量</th><th>剩余数量</th><th>当前状态</th><th>操作</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for asset in assets %}
                     {% set model_str = asset.model or '' %}
-                    {% set cate = '未分类' %}
-                    {% set src = '未知来源' %}
-                    {% set model_origin = model_str %}
+                    {% set cate, src, model_origin = '未分类', '未知来源', model_str %}
                     {% if '|' in model_str %}
-                        {% set parts = model_str.split('|', 1) %}
-                        {% set model_origin = parts[0] %}
-                        {% if '-' in parts[1] %}
-                            {% set ext_parts = parts[1].split('-', 1) %}
-                            {% set cate = ext_parts[0] %}
-                            {% set src = ext_parts[1] %}
-                        {% endif %}
-                    {% elif '-' in model_str %}
-                        {% set ext_parts = model_str.split('-', 1) %}
-                        {% set cate = ext_parts[0] %}
-                        {% set src = ext_parts[1] %}
-                        {% set model_origin = '无' %}
-                    {% endif %}
+                        {% set parts = model_str.split('|',1) %}{% set model_origin = parts[0] %}
+                        {% if '-' in parts[1] %}{% set cate, src = parts[1].split('-',1) %}{% endif %}
+                    {% elif '-' in model_str %}{% set cate, src = model_str.split('-',1) %}{% set model_origin = '无' %}{% endif %}
                     {% set cate_class = 'category-1' if cate == '机械类' else 'category-2' if cate == '电气类' else 'category-3' %}
                     <tr>
-                        <td>{{ asset.asset_id }}</td>
-                        <td>{{ asset.name }}</td>
-                        <td>{{ model_origin or '无' }}</td>
-                        <td><span class="category-tag {{ cate_class }}">{{ cate }}</span></td>
-                        <td><span class="source-tag">{{ src }}</span></td>
-                        <td>{{ asset.purchase_time or '未填写' }}</td>
-                        <td>{{ asset.location or '未填写' }}</td>
-                        <td>{{ asset.total_quantity }}</td>
-                        <td>{{ asset.current_quantity }}</td>
-                        <!-- 状态字体高亮：在库绿色，借出红色 -->
+                        <td>{{ asset.asset_id }}</td><td>{{ asset.name }}</td><td>{{ model_origin or '无' }}</td>
+                        <td><span class="category-tag {{ cate_class }}">{{ cate }}</span></td><td>{{ src }}</td>
+                        <td>{{ asset.purchase_time or '未填写' }}</td><td>{{ asset.location or '未填写' }}</td>
+                        <td>{{ asset.total_quantity }}</td><td>{{ asset.current_quantity }}</td>
+                        <!-- 状态字体颜色：在库绿，借出红 -->
                         <td class="{{ 'status-out' if asset.status == '借出' else 'status-in' }}">{{ asset.status }}</td>
                         <td>
-                            <form method="post" action="/delete_asset" onsubmit="return confirm('确定删除该资产及所有关联记录？')" style="display:inline;">
+                            <form method="post" action="/delete_asset" onsubmit="return confirm('确定删除该资产及所有记录？')" style="display:inline;">
                                 <input type="hidden" name="asset_id" value="{{ asset.asset_id }}">
                                 <button class="btn-delete">删除</button>
                             </form>
@@ -184,17 +114,11 @@
             </table>
         </div>
     </div>
-
     <script>
-        // 提示框自动消失（1.5秒后淡出）
-        const flashMsg = document.getElementById('flashMsg');
+        // 提示框1.5秒自动消失
+        const flashMsg = document.querySelector('.flash-message');
         if (flashMsg) {
-            setTimeout(() => {
-                flashMsg.style.opacity = '0';
-                setTimeout(() => {
-                    flashMsg.style.display = 'none';
-                }, 500);
-            }, 1500);
+            setTimeout(() => { flashMsg.style.opacity = 0; setTimeout(() => flashMsg.remove(), 500); }, 1500);
         }
     </script>
 </body>

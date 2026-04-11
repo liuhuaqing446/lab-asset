@@ -37,7 +37,7 @@
             white-space: nowrap; /* 强制文字不换行，防止挤压 */
         }
         /* 专门修复资产列，保证宽度足够 */
-        .record-table td:nth-child(3) { /* 资产列 */
+        .record-table td:nth-child(2) { /* 资产列，修正列索引 */
             min-width: 180px; /* 最小宽度，防止显示不全 */
             font-size: 13px;
         }
@@ -52,7 +52,7 @@
         .status-normal { color: #27ae60; font-weight: 600; }
         .status-fault { color: #e74c3c; font-weight: 600; }
         .status-repair { color: #f39c12; font-weight: 600; }
-        .status-scrap { color: #f39c12; font-weight: 600; }
+        .status-scrap { color: #95a5a6; font-weight: 600; }
         .btn-delete { padding: 6px 14px; background: #e74c3c; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
         /* 响应式：手机端优化 */
         @media (max-width: 992px) { 
@@ -66,7 +66,7 @@
                 min-width: 90px; 
                 font-size: 13px;
             }
-            .record-table td:nth-child(3) { min-width: 160px; } /* 手机端资产列最小宽度 */
+            .record-table td:nth-child(2) { min-width: 160px; } /* 手机端资产列最小宽度，修正列索引 */
             .nav { gap: 15px; }
         }
     </style>
@@ -136,61 +136,60 @@
                     {% set purpose_str = record.purpose or '' %}
                     {% set op_type = record.type %}
                     {% set asset_id = record.asset_id %}
-                    
-                    {# 🔥 核心修复1：从后端资产列表中精准匹配，彻底解决“未知资产” #}
+                    {# 核心修复1：精准匹配资产信息，彻底解决未知资产 #}
                     {% set asset_name = '未知资产' %}
                     {% set asset_model = '无' %}
                     {% for asset in assets %}
-                        {% if asset.asset_id == asset_id %}
+                        {% if asset.asset_id|string == asset_id|string %} {# 强制转字符串匹配，避免类型问题 #}
                             {% set asset_name = asset.name %}
-                            {% set asset_model = asset.model_origin %}
+                            {% set asset_model = asset.model_origin if asset.model_origin else '无' %}
                         {% endif %}
                     {% endfor %}
-
-                    {# 🔥 核心修复2：彻底修复“学习/正常”这类混合显示的逻辑 #}
-                    {% set display_purpose = purpose_origin %}
-                    {% if '|' in purpose_str %}
-                        {% set parts = purpose_str.split('|', 1) %}
-                        {% set purpose_origin = parts[0] | trim %}
-                        {% set return_time = parts[1] | replace('预计归还：', '') | trim %}
-                        {# 如果是归还操作，并且pur里包含“设备状态：”，则只显示状态 #}
-                        {% if op_type == '归还' and '设备状态：' in purpose_str %}
-                            {% set display_purpose = purpose_str.replace('设备状态：', '') | trim %}
+                    {# 核心修复2：解析用途/状态，彻底解决ID40 学习/正常显示问题 #}
+                    {% set purpose_origin = '' %}
+                    {% set return_time = '无' %}
+                    {% set device_status = '' %}
+                    {# 领用操作：解析用途和预计归还时间 #}
+                    {% if op_type == '领用' %}
+                        {% if '|' in purpose_str %}
+                            {% set parts = purpose_str.split('|', 1) %}
+                            {% set purpose_origin = parts[0]|trim if parts[0]|trim else '未填写' %}
+                            {% set return_time = parts[1]|replace('预计归还：', '')|trim if parts[1] else '无' %}
+                        {% else %}
+                            {% set purpose_origin = '未填写' %}
+                            {% set return_time = '无' %}
                         {% endif %}
-                    {% elif '设备状态：' in purpose_str and op_type == '归还' %}
-                        {# 专门处理记录ID 40这种情况：只保留设备状态 #}
-                        {% set display_purpose = purpose_str.replace('设备状态：', '') | trim %}
-                    {% else %}
-                        {% set return_time = purpose_str if '预计归还：' not in purpose_str else purpose_str.replace('预计归还：', '') %}
+                    {# 归还操作：解析设备状态，处理 学习/正常 这类混合格式 #}
+                    {% elif op_type == '归还' %}
+                        {% set raw_status = purpose_str|replace('设备状态：', '')|trim %}
+                        {# 包含斜线时，取最后一个作为最终状态 #}
+                        {% if '/' in raw_status %}
+                            {% set device_status = raw_status.split('/')|last|trim %}
+                        {% else %}
+                            {% set device_status = raw_status if raw_status else '正常' %}
+                        {% endif %}
+                        {% set return_time = record.time %} {# 归还操作的归还时间为操作时间 #}
                     {% endif %}
-
                     {# 状态样式映射 #}
-                    {% set status_class = 'status-normal' if display_purpose == '正常' else 'status-fault' if display_purpose == '故障' else 'status-repair' if display_purpose == '维修中' else 'status-scrap' if display_purpose == '报废' else '' %}
+                    {% set status_class = 'status-normal' if device_status == '正常' else 'status-fault' if device_status == '故障' else 'status-repair' if device_status == '维修中' else 'status-scrap' if device_status == '报废' else '' %}
                     {% set return_time_class = 'return-time-borrow' if op_type == '领用' else 'return-time-return' %}
-
                     <tr>
                         <td>{{ record.id }}</td>
-                        {# 🔥 核心修复3：完整显示资产信息，不再显示未知 #}
+                        {# 显示完整资产信息：编号-名称-型号 #}
                         <td>{{ asset_id }} - {{ asset_name }} - {{ asset_model }}</td>
                         <td>{{ record.person }}</td>
                         <td class="{{ 'type-borrow' if op_type == '领用' else 'type-return' }}">{{ op_type }}</td>
                         <td>{{ record.quantity }}</td>
                         <td>{{ record.time }}</td>
-                        {# 🔥 核心修复4：正确渲染状态，彻底解决“学习/正常” #}
+                        {# 按操作类型显示：领用显示用途，归还显示设备状态 #}
                         <td>
-                            {% if display_purpose and display_purpose != '无' %}
-                                {% if display_purpose.split('/') | length > 1 %}
-                                    {# 如果包含斜线，取最后一个作为状态 #}
-                                    {% set final_status = display_purpose.split('/') | last | trim %}
-                                    <span class="{{ 'status-normal' if final_status == '正常' else 'status-fault' if final_status == '故障' else 'status-repair' if final_status == '维修中' else 'status-scrap' if final_status == '报废' else '' }}">
-                                        {{ final_status }}
-                                    </span>
-                                {% else %}
-                                    <span class="{{ status_class }}">{{ display_purpose }}</span>
-                                {% endif %}
+                            {% if op_type == '领用' %}
+                                {{ purpose_origin }}
+                            {% else %}
+                                <span class="{{ status_class }}">{{ device_status }}</span>
                             {% endif %}
                         </td>
-                        <td class="{{ return_time_class }}">{{ return_time if return_time != '无' else '无' }}</td>
+                        <td class="{{ return_time_class }}">{{ return_time }}</td>
                         <td>
                             <form method="post" action="/delete_record" onsubmit="return confirm('确定删除该记录并恢复库存？')" style="display:inline;">
                                 <input type="hidden" name="record_id" value="{{ record.id }}">
@@ -204,8 +203,8 @@
         </div>
     </div>
     <script>
-        // 资产数据
-        const assets = [{% for asset in assets %}{ id: "{{ asset.asset_id }}", name: "{{ asset.name }}", model: "{{ asset.model_origin }}" },{% endfor %}];
+        // 资产数据（从后端模板传递，包含编号、名称、型号）
+        const assets = [{% for asset in assets %}{ id: "{{ asset.asset_id }}", name: "{{ asset.name }}", model: "{{ asset.model_origin if asset.model_origin else '无' }}" },{% endfor %}];
         const assetInput = document.getElementById('assetInput');
         const assetId = document.getElementById('assetId');
         const assetList = document.getElementById('assetList');
@@ -214,17 +213,26 @@
         const purposeGroup = document.getElementById('purposeGroup');
         const statusGroup = document.getElementById('statusGroup');
 
-        // 资产自动匹配
+        // 资产输入框自动匹配联想
         assetInput.addEventListener('input', function() {
             const query = this.value.trim().toLowerCase();
             assetList.innerHTML = '';
-            if (!query) { assetList.style.display = 'none'; assetId.value = ''; return; }
+            if (!query) {
+                assetList.style.display = 'none';
+                assetId.value = '';
+                return;
+            }
+            // 按编号、名称、组合名匹配
             const filtered = assets.filter(a => 
                 a.id.toLowerCase().includes(query) || 
                 a.name.toLowerCase().includes(query) ||
                 `${a.id} - ${a.name} - ${a.model}`.toLowerCase().includes(query)
             );
-            if (filtered.length === 0) { assetList.style.display = 'none'; return; }
+            if (filtered.length === 0) {
+                assetList.style.display = 'none';
+                return;
+            }
+            // 渲染联想列表
             filtered.forEach(a => {
                 const item = document.createElement('div');
                 item.className = 'asset-item';
@@ -240,15 +248,38 @@
             assetList.style.display = 'block';
         });
 
-        // 点击外部关闭列表
+        // 点击页面外部关闭资产联想列表
         document.addEventListener('click', e => {
             if (!assetInput.contains(e.target) && !assetList.contains(e.target)) {
                 assetList.style.display = 'none';
             }
         });
 
-        // 操作类型切换
-        function updateFields() {
+        // 操作类型切换：领用/归还 显示不同表单字段
+        function updateFormFields() {
             if (opType.value === '领用') {
                 returnDaysGroup.style.display = 'flex';
-                purpose
+                purposeGroup.style.display = 'flex';
+                statusGroup.style.display = 'none';
+            } else {
+                returnDaysGroup.style.display = 'none';
+                purposeGroup.style.display = 'none';
+                statusGroup.style.display = 'flex';
+            }
+        }
+        // 初始化字段显示
+        updateFormFields();
+        // 切换操作类型时更新
+        opType.addEventListener('change', updateFormFields);
+
+        // 提示框自动消失
+        const flashMsg = document.querySelector('.flash-message');
+        if (flashMsg) {
+            setTimeout(() => {
+                flashMsg.style.opacity = 0;
+                setTimeout(() => flashMsg.remove(), 500);
+            }, 1500);
+        }
+    </script>
+</body>
+</html>

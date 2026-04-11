@@ -141,105 +141,104 @@ def delete_asset():
     finally:
         db.close()
     return redirect("/")
+# 出入记录页面路由（GET请求，展示记录和表单）
+@app.route('/record')
+def record():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    
+    # 1. 查询所有资产数据，用于模板匹配名称/型号
+    cursor = db.cursor()
+    cursor.execute("SELECT asset_id, name, model FROM assets")
+    assets_data = cursor.fetchall()
+    
+    # 格式化资产列表，统一ID为字符串，避免类型不匹配
+    assets = []
+    for asset in assets_data:
+        model_str = asset[2] or ''
+        model_origin = model_str
+        # 解析型号中的分类/来源（和资产列表页逻辑保持一致）
+        if '|' in model_str:
+            parts = model_str.split('|', 1)
+            model_origin = parts[0]
+        elif '-' in model_str:
+            model_origin = model_str.split('-')[0]
+        assets.append({
+            'asset_id': str(asset[0]),  # 强制转字符串，确保匹配
+            'name': asset[1],
+            'model_origin': model_origin or '无'
+        })
+    
+    # 2. 查询所有出入记录
+    cursor.execute("SELECT id, asset_id, person, type, quantity, time, purpose FROM records ORDER BY id DESC")
+    records_data = cursor.fetchall()
+    
+    # 格式化记录列表，统一ID为字符串
+    records = []
+    for r in records_data:
+        records.append({
+            'id': r[0],
+            'asset_id': str(r[1]),  # 强制转字符串，和资产ID匹配
+            'person': r[2],
+            'type': r[3],
+            'quantity': r[4],
+            'time': r[5],
+            'purpose': r[6]
+        })
+    
+    # 3. 渲染模板，传递资产列表和记录列表
+    return render_template('record.html', system_name=SYSTEM_NAME, records=records, assets=assets)
 
-# 出入记录页
-
-# 提交出入记录
-@app.route("/do_record", methods=["POST"])
+# 提交出入记录路由（POST请求，处理表单提交）
+@app.route('/do_record', methods=['POST'])
 def do_record():
-    form_data = request.form
-    required = ["asset_id", "person", "quantity", "type"]
-    if form_data.get("type") == "领用" and not form_data.get("return_days"):
-        form_data["return_days"] = str(DEFAULT_RETURN_DAYS)
-    for key in required:
-        if not form_data.get(key):
-            flash(f"⚠️ {key}为必填项！")
-            return redirect("/record")
-    asset_id = form_data["asset_id"]
-    person = form_data["person"].strip()
-    op_type = form_data["type"]
-    quantity = int(form_data["quantity"])
-    return_days = int(form_data.get("return_days", DEFAULT_RETURN_DAYS)) if op_type == "领用" else 0
-    purpose_origin = form_data.get("purpose", "")
-    device_status = form_data.get("device_status", "正常") if op_type == "归还" else ""
-    db = get_db()
-    try:
-        cur = db.cursor()
-        cur.execute("SELECT * FROM asset_info WHERE asset_id=%s", (asset_id,))
-        asset = cur.fetchone()
-        if not asset:
-            flash("⚠️ 资产不存在！")
-            return redirect("/record")
-        current_qty, total_qty = asset["current_quantity"], asset["total_quantity"]
-        if op_type == "领用":
-            if current_qty < quantity:
-                flash(f"⚠️ 库存不足！当前剩余 {current_qty} 件，无法领用 {quantity} 件")
-                return redirect("/record")
-            new_qty = current_qty - quantity
-            expected_return = format_beijing_time(get_beijing_time() + timedelta(days=return_days))
-            purpose_with_return = f"{purpose_origin}|预计归还：{expected_return}" if purpose_origin else f"预计归还：{expected_return}"
-        else:
-            cur.execute("SELECT COALESCE(SUM(quantity),0) as total_borrowed FROM record_info WHERE asset_id=%s AND person=%s AND type='领用'", (asset_id, person))
-            total_borrowed = cur.fetchone()["total_borrowed"]
-            cur.execute("SELECT COALESCE(SUM(quantity),0) as total_returned FROM record_info WHERE asset_id=%s AND person=%s AND type='归还'", (asset_id, person))
-            total_returned = cur.fetchone()["total_returned"]
-            if (total_borrowed - total_returned) < quantity:
-                flash(f"⚠️ 仅可归还 {total_borrowed - total_returned} 件，无法超还！")
-                return redirect("/record")
-            new_qty = current_qty + quantity
-            if new_qty > total_qty:
-                flash(f"⚠️ 归还后库存({new_qty})超过总数量({total_qty})！")
-                return redirect("/record")
-            purpose_with_return = f"设备状态：{device_status}"
-        new_status = "借出" if new_qty == 0 else "在库"
-        cur.execute("UPDATE asset_info SET current_quantity=%s, status=%s WHERE asset_id=%s", (new_qty, new_status, asset_id))
-        cur.execute("""
-            INSERT INTO record_info (asset_id, person, type, quantity, time, purpose, handler)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, (asset_id, person, op_type, quantity, format_beijing_time(get_beijing_time()), purpose_with_return, ""))
-        db.commit()
-        flash("✅ 操作成功！")
-    except Exception as e:
-        print(f"操作记录失败: {e}")
-        flash("❌ 操作失败，请检查数据！")
-    finally:
-        db.close()
-    return redirect("/record")
-
-# 删除出入记录
-@app.route("/delete_record", methods=["POST"])
-def delete_record():
-    record_id = request.form["record_id"]
-    db = get_db()
-    try:
-        cur = db.cursor()
-        cur.execute("SELECT * FROM record_info WHERE id=%s", (record_id,))
-        record = cur.fetchone()
-        if not record:
-            flash("⚠️ 记录不存在！")
-            return redirect("/record")
-        asset_id, op_type, quantity = record["asset_id"], record["type"], record["quantity"]
-        cur.execute("SELECT * FROM asset_info WHERE asset_id=%s", (asset_id,))
-        asset = cur.fetchone()
-        if not asset:
-            flash("⚠️ 资产不存在！")
-            return redirect("/record")
-        current_qty = asset["current_quantity"]
-        new_qty = current_qty + quantity if op_type == "领用" else current_qty - quantity
-        if new_qty < 0:
-            flash("⚠️ 删除后库存为负，无法操作！")
-            return redirect("/record")
-        new_status = "借出" if new_qty == 0 else "在库"
-        cur.execute("UPDATE asset_info SET current_quantity=%s, status=%s WHERE asset_id=%s", (new_qty, new_status, asset_id))
-        cur.execute("DELETE FROM record_info WHERE id=%s", (record_id,))
-        db.commit()
-        flash("✅ 记录删除成功，库存已恢复！")
-    except Exception as e:
-        print(f"删除记录失败: {e}")
-        flash("❌ 记录删除失败！")
-    finally:
-        db.close()
-    return redirect("/record")
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    
+    asset_id = request.form['asset_id']
+    person = request.form['person']
+    op_type = request.form['type']
+    quantity = int(request.form['quantity'])
+    
+    cursor = db.cursor()
+    # 校验资产是否存在
+    cursor.execute("SELECT current_quantity, total_quantity FROM assets WHERE asset_id = %s", (asset_id,))
+    asset = cursor.fetchone()
+    if not asset:
+        flash('资产不存在！')
+        return redirect(url_for('record'))
+    
+    current_qty, total_qty = asset[0], asset[1]
+    
+    # 处理领用/归还逻辑
+    if op_type == '领用':
+        if current_qty < quantity:
+            flash('库存不足，无法领用！')
+            return redirect(url_for('record'))
+        return_days = int(request.form['return_days'])
+        purpose = request.form['purpose'] or '未填写'
+        # 计算预计归还时间
+        return_time = (datetime.now() + timedelta(days=return_days)).strftime('%Y-%m-%d %H:%M:%S')
+        # 保存记录：用途+预计归还时间
+        purpose_str = f"{purpose}|预计归还：{return_time}"
+        # 更新库存
+        cursor.execute("UPDATE assets SET current_quantity = current_quantity - %s WHERE asset_id = %s", (quantity, asset_id))
+    else:
+        # 归还操作
+        device_status = request.form['device_status']
+        purpose_str = f"设备状态：{device_status}"
+        # 更新库存
+        cursor.execute("UPDATE assets SET current_quantity = current_quantity + %s WHERE asset_id = %s", (quantity, asset_id))
+    
+    # 插入记录
+    now_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    cursor.execute(
+        "INSERT INTO records (asset_id, person, type, quantity, time, purpose) VALUES (%s, %s, %s, %s, %s, %s)",
+        (asset_id, person, op_type, quantity, now_time, purpose_str)
+    )
+    db.commit()
+    flash('操作成功！')
+    return redirect(url_for('record'))
 
 # 查询页
 @app.route("/query")

@@ -9,20 +9,27 @@
         body { background: #f5f7fa; padding: 15px; }
         .container { max-width: 1200px; margin: 0 auto; }
         .header { background: #2980b9; color: #fff; padding: 18px 20px; border-radius: 12px 12px 0 0; text-align: center; }
-        .nav { background: #fff; padding: 12px 20px; border-bottom: 1px solid #e1e8ed; display: flex; gap: 20px; align-items: center; flex-wrap: wrap; justify-content: center; }
+        .nav { background: #fff; padding: 12px 20px; border-bottom: 1px solid #e1e8ed; display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
         .nav a { text-decoration: none; color: #2c3e50; font-size: 15px; font-weight: 500; padding: 6px 0; border-bottom: 2px solid transparent; transition: all 0.3s; }
         .nav a.active { color: #2980b9; border-bottom-color: #2980b9; }
         .nav .logout { margin-left: auto; color: #e74c3c; }
         .content { background: #fff; padding: 30px 20px; border-radius: 0 0 12px 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.05); }
 
-        /* 核心修复：查询页布局+去掉多余文字 */
-        .query-form { max-width: 800px; margin: 0 auto 30px; display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; justify-content: center; }
-        .form-group { display: flex; flex-direction: column; gap: 8px; min-width: 220px; }
+        /* 核心修复：查询页布局，标签与输入框分行，清除所有多余文字 */
+        .query-form { max-width: 800px; margin: 0 auto 30px; display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap; justify-content: center; }
+        .form-group { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 8px; 
+            min-width: 240px;
+        }
         .form-group label { 
             color: #34495e; 
             font-size: 16px; 
             font-weight: 500;
             text-align: left;
+            /* 强制标签与输入框分行 */
+            width: 100%;
         }
         .form-group input, .form-group select { 
             padding: 14px 16px; 
@@ -31,14 +38,18 @@
             font-size: 15px; 
             width: 100%;
             transition: border-color 0.3s;
+            /* 清除输入框内所有提示符 */
+            placeholder: none;
+        }
+        .form-group input::placeholder { 
+            color: transparent; 
+            display: none;
         }
         .form-group input:focus, .form-group select:focus { 
             outline: none; 
             border-color: #2980b9; 
             box-shadow: 0 0 0 3px rgba(41,128,185,0.1); 
         }
-        /* 去掉输入框内的提示文字 */
-        .form-group input::placeholder { color: transparent; }
         .btn-query { 
             padding: 14px 35px; 
             background: #2980b9; 
@@ -50,6 +61,7 @@
             cursor: pointer; 
             white-space: nowrap; 
             transition: background 0.3s;
+            margin-bottom: 8px;
         }
         .btn-query:hover { background: #1a5276; }
 
@@ -73,16 +85,28 @@
         .status-out { color: #e74c3c; font-weight: 700; }
         .return-time { color: #e74c3c; font-weight: 600; }
 
-        /* 响应式适配 */
+        /* 响应式：彻底修复手机端布局 */
         @media (max-width: 992px) {
             .asset-info { grid-template-columns: repeat(2, 1fr); }
         }
         @media (max-width: 768px) {
-            .query-form { flex-direction: column; align-items: stretch; max-width: 100%; }
-            .form-group { min-width: auto; }
+            .query-form { 
+                flex-direction: column; 
+                align-items: stretch; 
+                max-width: 100%;
+                gap: 15px;
+            }
+            .form-group { 
+                min-width: auto;
+                width: 100%;
+            }
+            .btn-query {
+                width: 100%;
+                margin-top: 10px;
+            }
             .asset-info { grid-template-columns: 1fr; }
             .unreturned-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-            .nav { justify-content: flex-start; }
+            .nav { justify-content: flex-start; gap: 15px; }
         }
     </style>
 </head>
@@ -98,7 +122,7 @@
             <a href="/logout" class="logout">退出登录</a>
         </div>
         <div class="content">
-            <!-- 核心修复：去掉多余文字，标签与输入框分行 -->
+            <!-- 核心修复：删除所有多余文字，标签与输入框分行 -->
             <form class="query-form" id="queryForm">
                 <div class="form-group">
                     <label>资产编号/名称</label>

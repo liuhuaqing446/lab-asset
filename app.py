@@ -359,6 +359,83 @@ def api_asset():
         result.append({"asset": asset, "unreturned": unreturned})
     db.close()
     return jsonify(ok=True, data=result)
+    # ==============================
+# 新增功能：Excel 导入 / 导出（只新增，不修改任何代码）
+# ==============================
+import pandas as pd
+from flask import send_file
+import io
+
+# 一键导入资产 Excel
+@app.route("/import_assets", methods=["POST"])
+def import_assets():
+    if not session.get("login"):
+        return redirect("/login")
+    try:
+        file = request.files["file"]
+        df = pd.read_excel(file)
+        db = get_db()
+        cur = db.cursor()
+
+        for _, row in df.iterrows():
+            asset_id = str(row["资产编号"]).strip()
+            name = str(row["资产名称"]).strip()
+            model = str(row["设备型号"]).strip()
+            category = str(row["设备分类"]).strip()
+            source = str(row["设备来源"]).strip()
+            purchase_time = str(row["采购时间"]).strip() if not pd.isna(row["采购时间"]) else ""
+            location = str(row["存放位置"]).strip() if not pd.isna(row["存放位置"]) else ""
+            total_quantity = int(row["总数量"])
+
+            cur.execute("SELECT asset_id FROM asset_info WHERE asset_id = %s", (asset_id,))
+            if cur.fetchone():
+                continue
+
+            model_ext = f"{model}|{category}-{source}" if model else f"{category}-{source}"
+            cur.execute("""
+                INSERT INTO asset_info (asset_id, name, model, purchase_time, location, total_quantity, current_quantity, status)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, '在库')
+            """, (asset_id, name, model_ext, purchase_time, location, total_quantity, total_quantity))
+
+        db.commit()
+        flash("✅ Excel 资产导入完成！")
+    except Exception as e:
+        print("导入错误：", e)
+        flash("❌ 导入失败，请检查Excel格式")
+    return redirect("/")
+
+# 一键导出资产 + 出入记录
+@app.route("/export_all")
+def export_all():
+    if not session.get("login"):
+        return redirect("/login")
+    try:
+        db = get_db()
+        cur = db.cursor()
+
+        cur.execute("SELECT * FROM asset_info")
+        assets = cur.fetchall()
+        asset_df = pd.DataFrame(assets)
+
+        cur.execute("SELECT * FROM record_info")
+        records = cur.fetchall()
+        record_df = pd.DataFrame(records)
+
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            asset_df.to_excel(writer, sheet_name="资产列表", index=False)
+            record_df.to_excel(writer, sheet_name="出入记录", index=False)
+        output.seek(0)
+
+        return send_file(
+            output,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            download_name="实验室资产_出入记录.xlsx"
+        )
+    except Exception as e:
+        print("导出错误：", e)
+        flash("❌ 导出失败")
+        return redirect("/query")
 
 # 启动服务
 if __name__ == "__main__":

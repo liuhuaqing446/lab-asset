@@ -61,6 +61,22 @@
             margin-bottom: 8px;
         }
         .btn-query:hover { background: #1a5276; }
+        .btn-export { 
+            padding: 14px 35px; 
+            background: #27ae60; 
+            color: #fff; 
+            border: none; 
+            border-radius: 8px; 
+            font-size: 16px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            white-space: nowrap; 
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 8px;
+            transition: background 0.3s;
+        }
+        .btn-export:hover { background: #1e8449; }
 
         /* 查询结果样式：修复未归还记录布局 */
         .result-card { background: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 20px; border-left: 4px solid #2980b9; }
@@ -119,9 +135,10 @@
                 min-width: auto;
                 width: 100%;
             }
-            .btn-query {
+            .btn-query, .btn-export {
                 width: 100%;
                 margin-top: 10px;
+                text-align: center;
             }
             .asset-info { grid-template-columns: 1fr; }
             /* 手机端未归还记录表格横向滚动 */
@@ -146,10 +163,7 @@
             <a href="/logout" class="logout">退出登录</a>
         </div>
         <div class="content">
-            <div style="margin-bottom:12px;">
-                <a href="/export_all" style="padding:8px 16px;background:#27ae60;color:white;border-radius:6px;text-decoration:none;display:inline-block;">导出资产 + 出入记录（Excel）</a>
-            </div>
-            <!-- 核心修复：删除所有多余文字，标签与输入框分行 -->
+            <!-- 核心修复：一键导出与查询资产同一行 -->
             <form class="query-form" id="queryForm">
                 <div class="form-group">
                     <label>资产编号/名称</label>
@@ -165,6 +179,7 @@
                     </select>
                 </div>
                 <button type="submit" class="btn-query">查询资产</button>
+                <a href="/export_all" class="btn-export">一键导出</a>
             </form>
 
             <div id="resultArea"></div>

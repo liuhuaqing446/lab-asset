@@ -74,35 +74,40 @@
                     <div class="flash-message {{ 'flash-success' if '成功' in messages[0] else 'flash-error' }}">{{ messages[0] }}</div>
                 {% endif %}
             {% endwith %}
-            <form action="/import_assets" method="POST" enctype="multipart/form-data" style="margin-bottom:12px;">
-                  <input type="file" name="file" accept=".xlsx" required style="padding:6px;">
-                  <button type="submit" style="padding:8px 16px; background:#2980b9; color:white; border:none; border-radius:6px; cursor:pointer;">一键导入 Excel 资产</button>
-            </form>
-            <form method="post" action="/add_asset">
-                <div class="form-grid">
-                    <div class="form-group"><label>资产编号*</label><input type="text" name="asset_id" required placeholder=""></div>
-                    <div class="form-group"><label>资产名称*</label><input type="text" name="name" required placeholder=""></div>
-                    <div class="form-group"><label>设备型号</label><input type="text" name="model" placeholder=""></div>
-                    <div class="form-group"><label>设备分类*</label>
-                        <select name="category" required>
-                            <option value="">请选择分类</option>
-                            {% for cate in categories %}<option value="{{ cate }}">{{ cate }}</option>{% endfor %}
-                        </select>
+
+            <!-- 🔴 布局修复：导入 + 录入 同一行 -->
+            <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px; flex-wrap: wrap;">
+                <form action="/import_assets" method="POST" enctype="multipart/form-data" style="display: flex; align-items: center; gap: 8px; margin:0;">
+                    <input type="file" name="file" accept=".xlsx" required style="padding:6px;">
+                    <button type="submit" style="padding:8px 16px; background:#2980b9; color:white; border:none; border-radius:6px; cursor:pointer;">一键导入</button>
+                </form>
+
+                <form method="post" action="/add_asset" style="flex: 1; margin:0;">
+                    <div class="form-grid">
+                        <div class="form-group"><label>资产编号*</label><input type="text" name="asset_id" required placeholder=""></div>
+                        <div class="form-group"><label>资产名称*</label><input type="text" name="name" required placeholder=""></div>
+                        <div class="form-group"><label>设备型号</label><input type="text" name="model" placeholder=""></div>
+                        <div class="form-group"><label>设备分类*</label>
+                            <select name="category" required>
+                                <option value="">请选择分类</option>
+                                {% for cate in categories %}<option value="{{ cate }}">{{ cate }}</option>{% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group"><label>设备来源*</label>
+                            <select name="source" required>
+                                <option value="">请选择来源</option>
+                                {% for src in sources %}<option value="{{ src }}">{{ src }}</option>{% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group"><label>采购时间</label><input type="date" name="purchase_time"></div>
+                        <div class="form-group"><label>存放位置</label><input type="text" name="location" placeholder=""></div>
+                        <div class="form-group"><label>总数量*</label><input type="number" name="total_quantity" value="1" min="1" required></div>
+                        <div class="form-group"></div>
+                        <button type="submit" class="btn-submit">录入资产</button>
                     </div>
-                    <div class="form-group"><label>设备来源*</label>
-                        <select name="source" required>
-                            <option value="">请选择来源</option>
-                            {% for src in sources %}<option value="{{ src }}">{{ src }}</option>{% endfor %}
-                        </select>
-                    </div>
-                    <!-- 核心修复：采购时间input，配合CSS隐藏默认提示，选中后正常显示 -->
-                    <div class="form-group"><label>采购时间</label><input type="date" name="purchase_time"></div>
-                    <div class="form-group"><label>存放位置</label><input type="text" name="location" placeholder=""></div>
-                    <div class="form-group"><label>总数量*</label><input type="number" name="total_quantity" value="1" min="1" required></div>
-                    <div class="form-group"></div>
-                    <button type="submit" class="btn-submit">录入资产</button>
-                </div>
-            </form>
+                </form>
+            </div>
+
             <table class="asset-table">
                 <thead>
                     <tr>

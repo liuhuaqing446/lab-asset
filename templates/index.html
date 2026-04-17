@@ -17,109 +17,21 @@
         .flash-message { padding: 10px 14px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; }
         .flash-success { background: #d4edda; color: #155724; }
         .flash-error { background: #f8d7da; color: #721c24; }
-        
-        /* 🔴 核心修复：顶部布局容器，让导入和录入表单同行 */
-        .top-bar {
-            display: flex;
-            align-items: center;
-            gap: 30px;
-            margin-bottom: 25px;
-            flex-wrap: wrap;
-        }
-        /* 导入表单样式 */
-        .import-form {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .import-btn {
-            padding: 10px 20px;
-            background: #2980b9;
-            color: #fff;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 15px;
-        }
-        .import-file {
-            padding: 6px;
-        }
-
-        /* 录入资产表单样式 */
-        .entry-form {
-            flex: 1;
-        }
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-        }
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-        .form-group label {
-            color: #34495e;
-            font-size: 14px;
-            font-weight: 500;
-        }
-        .form-group input, .form-group select {
-            padding: 10px 14px;
-            border: 1px solid #e1e8ed;
-            border-radius: 8px;
-            font-size: 14px;
-        }
-        .form-group input:focus, .form-group select:focus {
-            outline: none;
-            border-color: #2980b9;
-            box-shadow: 0 0 0 3px rgba(41,128,185,0.1);
-        }
-        input[type="date"]::-webkit-calendar-picker-indicator {
-            opacity: 1;
-            cursor: pointer;
-        }
-        input[type="date"]::placeholder {
-            color: transparent;
-        }
-        input[type="date"]::-webkit-datetime-edit {
-            color: transparent;
-        }
+        .form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group label { color: #34495e; font-size: 14px; font-weight: 500; }
+        .form-group input, .form-group select { padding: 10px 14px; border: 1px solid #e1e8ed; border-radius: 8px; font-size: 14px; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #2980b9; box-shadow: 0 0 0 3px rgba(41,128,185,0.1); }
+        input[type="date"]::-webkit-calendar-picker-indicator { opacity: 1; cursor: pointer; }
+        input[type="date"]::placeholder { color: transparent; }
+        input[type="date"]::-webkit-datetime-edit { color: transparent; }
         input[type="date"]:focus::-webkit-datetime-edit,
-        input[type="date"]:valid::-webkit-datetime-edit {
-            color: #34495e;
-        }
-        .btn-submit {
-            grid-column: 1 / -1;
-            justify-self: center;
-            padding: 12px 35px;
-            background: #2980b9;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 15px;
-        }
-
-        /* 表格样式 */
-        .asset-table {
-            width: 100%;
-            border-collapse: collapse;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        .asset-table thead {
-            background: #f8f9fa;
-        }
-        .asset-table th, .asset-table td {
-            padding: 12px 10px;
-            text-align: center;
-            border-bottom: 1px solid #e9ecef;
-            white-space: nowrap;
-        }
-        .asset-table tbody tr:hover {
-            background: #f8f9fa;
-        }
+        input[type="date"]:valid::-webkit-datetime-edit { color: #34495e; }
+        .btn-submit { grid-column: 1 / -1; justify-self: center; padding: 12px 35px; background: #2980b9; color: #fff; border: none; border-radius: 8px; cursor: pointer; }
+        .asset-table { width: 100%; border-collapse: collapse; border-radius: 8px; overflow: hidden; }
+        .asset-table thead { background: #f8f9fa; }
+        .asset-table th, .asset-table td { padding: 12px 10px; text-align: center; border-bottom: 1px solid #e9ecef; white-space: nowrap; }
+        .asset-table tbody tr:hover { background: #f8f9fa; }
         .status-in { color: #27ae60; font-weight: 700; font-size: 15px; }
         .status-out { color: #e74c3c; font-weight: 700; font-size: 15px; }
         .category-tag { display: inline-block; padding: 4px 8px; border-radius: 4px; color: #fff; font-size: 12px; }
@@ -128,14 +40,29 @@
         .category-3 { background: #7f8c8d; }
         .btn-delete { padding: 6px 14px; background: #e74c3c; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
 
-        /* 响应式适配 */
-        @media (max-width: 992px) {
-            .form-grid { grid-template-columns: repeat(2, 1fr); }
+        /* 🔴 只改这里：强制导入和录入同行 */
+        .header-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 30px;
+            margin-bottom: 25px;
         }
-        @media (max-width: 768px) {
-            .top-bar { flex-direction: column; align-items: stretch; }
-            .import-form { width: 100%; justify-content: center; margin-bottom: 15px; }
-            .form-grid { grid-template-columns: 1fr; }
+        .import-box {
+            flex-shrink: 0; /* 不压缩导入区域 */
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding-top: 35px; /* 和录入表单顶部对齐 */
+        }
+        .entry-box {
+            flex-grow: 1; /* 录入表单占满剩余空间 */
+        }
+
+        @media (max-width: 992px) { .form-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 768px) { 
+            .header-row { flex-direction: column; align-items: stretch; }
+            .import-box { justify-content: center; padding-top: 0; margin-bottom: 15px; }
+            .form-grid { grid-template-columns: 1fr; } 
             .asset-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
             .asset-table th, .asset-table td { min-width: 100px; font-size: 13px; }
         }
@@ -157,39 +84,43 @@
                 {% endif %}
             {% endwith %}
 
-            <!-- 🔴 修复后的顶部布局：导入按钮与录入表单同行 -->
-            <div class="top-bar">
-                <!-- 一键导入表单 -->
-                <form action="/import_assets" method="POST" enctype="multipart/form-data" class="import-form">
-                    <input type="file" name="file" accept=".xlsx" required class="import-file">
-                    <button type="submit" class="import-btn">一键导入</button>
-                </form>
+            <!-- 🔴 核心修改：用 header-row 强制同行 -->
+            <div class="header-row">
+                <!-- 一键导入 -->
+                <div class="import-box">
+                    <form action="/import_assets" method="POST" enctype="multipart/form-data" style="display: flex; align-items: center; gap: 8px; margin: 0;">
+                        <input type="file" name="file" accept=".xlsx" required style="padding:6px;">
+                        <button type="submit" style="padding:8px 16px; background:#2980b9; color:white; border:none; border-radius:6px; cursor:pointer;">一键导入</button>
+                    </form>
+                </div>
 
                 <!-- 录入资产表单 -->
-                <form method="post" action="/add_asset" class="entry-form">
-                    <div class="form-grid">
-                        <div class="form-group"><label>资产编号*</label><input type="text" name="asset_id" required placeholder=""></div>
-                        <div class="form-group"><label>资产名称*</label><input type="text" name="name" required placeholder=""></div>
-                        <div class="form-group"><label>设备型号</label><input type="text" name="model" placeholder=""></div>
-                        <div class="form-group"><label>设备分类*</label>
-                            <select name="category" required>
-                                <option value="">请选择分类</option>
-                                {% for cate in categories %}<option value="{{ cate }}">{{ cate }}</option>{% endfor %}
-                            </select>
+                <div class="entry-box">
+                    <form method="post" action="/add_asset">
+                        <div class="form-grid">
+                            <div class="form-group"><label>资产编号*</label><input type="text" name="asset_id" required placeholder=""></div>
+                            <div class="form-group"><label>资产名称*</label><input type="text" name="name" required placeholder=""></div>
+                            <div class="form-group"><label>设备型号</label><input type="text" name="model" placeholder=""></div>
+                            <div class="form-group"><label>设备分类*</label>
+                                <select name="category" required>
+                                    <option value="">请选择分类</option>
+                                    {% for cate in categories %}<option value="{{ cate }}">{{ cate }}</option>{% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group"><label>设备来源*</label>
+                                <select name="source" required>
+                                    <option value="">请选择来源</option>
+                                    {% for src in sources %}<option value="{{ src }}">{{ src }}</option>{% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group"><label>采购时间</label><input type="date" name="purchase_time"></div>
+                            <div class="form-group"><label>存放位置</label><input type="text" name="location" placeholder=""></div>
+                            <div class="form-group"><label>总数量*</label><input type="number" name="total_quantity" value="1" min="1" required></div>
+                            <div class="form-group"></div>
+                            <button type="submit" class="btn-submit">录入资产</button>
                         </div>
-                        <div class="form-group"><label>设备来源*</label>
-                            <select name="source" required>
-                                <option value="">请选择来源</option>
-                                {% for src in sources %}<option value="{{ src }}">{{ src }}</option>{% endfor %}
-                            </select>
-                        </div>
-                        <div class="form-group"><label>采购时间</label><input type="date" name="purchase_time"></div>
-                        <div class="form-group"><label>存放位置</label><input type="text" name="location" placeholder=""></div>
-                        <div class="form-group"><label>总数量*</label><input type="number" name="total_quantity" value="1" min="1" required></div>
-                        <div class="form-group"></div>
-                        <button type="submit" class="btn-submit">录入资产</button>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
 
             <table class="asset-table">

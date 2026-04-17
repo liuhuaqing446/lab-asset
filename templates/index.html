@@ -22,16 +22,27 @@
         .form-group label { color: #34495e; font-size: 14px; font-weight: 500; }
         .form-group input, .form-group select { padding: 10px 14px; border: 1px solid #e1e8ed; border-radius: 8px; font-size: 14px; }
         .form-group input:focus, .form-group select:focus { outline: none; border-color: #2980b9; box-shadow: 0 0 0 3px rgba(41,128,185,0.1); }
-        input[type="date"]::-webkit-calendar-picker-indicator { opacity: 1; cursor: pointer; }
-        input[type="date"]::placeholder { color: transparent; }
-        input[type="date"]::-webkit-datetime-edit { color: transparent; }
+        /* 核心修复：彻底隐藏date输入框的yyyy/mm/日占位符，同时保证选中后显示 */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            opacity: 1;
+            cursor: pointer;
+        }
+        input[type="date"]::placeholder {
+            color: transparent;
+        }
+        input[type="date"]::-webkit-datetime-edit {
+            color: transparent;
+        }
         input[type="date"]:focus::-webkit-datetime-edit,
-        input[type="date"]:valid::-webkit-datetime-edit { color: #34495e; }
+        input[type="date"]:valid::-webkit-datetime-edit {
+            color: #34495e;
+        }
         .btn-submit { grid-column: 1 / -1; justify-self: center; padding: 12px 35px; background: #2980b9; color: #fff; border: none; border-radius: 8px; cursor: pointer; }
         .asset-table { width: 100%; border-collapse: collapse; border-radius: 8px; overflow: hidden; }
         .asset-table thead { background: #f8f9fa; }
         .asset-table th, .asset-table td { padding: 12px 10px; text-align: center; border-bottom: 1px solid #e9ecef; white-space: nowrap; }
         .asset-table tbody tr:hover { background: #f8f9fa; }
+        /* 状态字体：在库绿色 借出红色 */
         .status-in { color: #27ae60; font-weight: 700; font-size: 15px; }
         .status-out { color: #e74c3c; font-weight: 700; font-size: 15px; }
         .category-tag { display: inline-block; padding: 4px 8px; border-radius: 4px; color: #fff; font-size: 12px; }
@@ -40,28 +51,38 @@
         .category-3 { background: #7f8c8d; }
         .btn-delete { padding: 6px 14px; background: #e74c3c; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
 
-        /* 🔴 只改这里：强制导入和录入同行 */
-        .header-row {
+        /* ========== 只新增这里：导入按钮和表单同行 ========== */
+        .top-wrapper {
             display: flex;
             align-items: flex-start;
-            gap: 30px;
+            gap: 20px;
             margin-bottom: 25px;
         }
-        .import-box {
-            flex-shrink: 0; /* 不压缩导入区域 */
+        .import-block {
+            flex-shrink: 0;
+            padding-top: 32px; /* 和录入表单的标签行对齐 */
             display: flex;
             align-items: center;
             gap: 8px;
-            padding-top: 35px; /* 和录入表单顶部对齐 */
         }
-        .entry-box {
-            flex-grow: 1; /* 录入表单占满剩余空间 */
+        .entry-block {
+            flex-grow: 1;
         }
+        .import-btn {
+            padding: 10px 20px;
+            background: #2980b9;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        /* ================================================= */
 
+        /* 响应式 */
         @media (max-width: 992px) { .form-grid { grid-template-columns: repeat(2, 1fr); } }
         @media (max-width: 768px) { 
-            .header-row { flex-direction: column; align-items: stretch; }
-            .import-box { justify-content: center; padding-top: 0; margin-bottom: 15px; }
+            .top-wrapper { flex-direction: column; align-items: stretch; }
+            .import-block { justify-content: center; padding-top: 0; margin-bottom: 15px; }
             .form-grid { grid-template-columns: 1fr; } 
             .asset-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
             .asset-table th, .asset-table td { min-width: 100px; font-size: 13px; }
@@ -84,18 +105,18 @@
                 {% endif %}
             {% endwith %}
 
-            <!-- 🔴 核心修改：用 header-row 强制同行 -->
-            <div class="header-row">
-                <!-- 一键导入 -->
-                <div class="import-box">
-                    <form action="/import_assets" method="POST" enctype="multipart/form-data" style="display: flex; align-items: center; gap: 8px; margin: 0;">
+            <!-- ========== 只修改这里：用 top-wrapper 包裹，实现同行 ========== -->
+            <div class="top-wrapper">
+                <!-- 一键导入（只加了布局，功能完全不变） -->
+                <div class="import-block">
+                    <form action="/import_assets" method="POST" enctype="multipart/form-data" style="display: flex; align-items: center; margin: 0;">
                         <input type="file" name="file" accept=".xlsx" required style="padding:6px;">
-                        <button type="submit" style="padding:8px 16px; background:#2980b9; color:white; border:none; border-radius:6px; cursor:pointer;">一键导入</button>
+                        <button type="submit" class="import-btn">一键导入</button>
                     </form>
                 </div>
 
-                <!-- 录入资产表单 -->
-                <div class="entry-box">
+                <!-- 录入资产表单（原代码完全不动） -->
+                <div class="entry-block">
                     <form method="post" action="/add_asset">
                         <div class="form-grid">
                             <div class="form-group"><label>资产编号*</label><input type="text" name="asset_id" required placeholder=""></div>
@@ -113,6 +134,7 @@
                                     {% for src in sources %}<option value="{{ src }}">{{ src }}</option>{% endfor %}
                                 </select>
                             </div>
+                            <!-- 核心修复：采购时间input，配合CSS隐藏默认提示，选中后正常显示 -->
                             <div class="form-group"><label>采购时间</label><input type="date" name="purchase_time"></div>
                             <div class="form-group"><label>存放位置</label><input type="text" name="location" placeholder=""></div>
                             <div class="form-group"><label>总数量*</label><input type="number" name="total_quantity" value="1" min="1" required></div>
@@ -122,6 +144,7 @@
                     </form>
                 </div>
             </div>
+            <!-- ================================================= -->
 
             <table class="asset-table">
                 <thead>

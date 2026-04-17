@@ -37,7 +37,10 @@
         input[type="date"]:valid::-webkit-datetime-edit {
             color: #34495e;
         }
-        .btn-submit { grid-column: 1 / -1; justify-self: center; padding: 12px 35px; background: #2980b9; color: #fff; border: none; border-radius: 8px; cursor: pointer; }
+        
+        /* 录入按钮样式（移除了原有的Grid占据设定） */
+        .btn-submit { padding: 12px 35px; background: #2980b9; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; }
+        
         .asset-table { width: 100%; border-collapse: collapse; border-radius: 8px; overflow: hidden; }
         .asset-table thead { background: #f8f9fa; }
         .asset-table th, .asset-table td { padding: 12px 10px; text-align: center; border-bottom: 1px solid #e9ecef; white-space: nowrap; }
@@ -51,38 +54,44 @@
         .category-3 { background: #7f8c8d; }
         .btn-delete { padding: 6px 14px; background: #e74c3c; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
 
-        /* ========== 只新增这里：导入按钮和表单同行 ========== */
-        .top-wrapper {
-            display: flex;
-            align-items: flex-start;
-            gap: 20px;
+        /* ========== 修改布局：保证录入按钮绝对居中，导入表单在其右侧 ========== */
+        .action-row {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
             margin-bottom: 25px;
         }
-        .import-block {
-            flex-shrink: 0;
-            padding-top: 32px; /* 和录入表单的标签行对齐 */
+        .action-center {
+            grid-column: 2; /* 强制占据中间列，实现绝对居中 */
+        }
+        .action-right {
+            grid-column: 3; /* 占据右侧列 */
+            display: flex;
+            justify-content: flex-start;
+            padding-left: 20px;
+        }
+        .import-form {
             display: flex;
             align-items: center;
             gap: 8px;
-        }
-        .entry-block {
-            flex-grow: 1;
+            margin: 0;
         }
         .import-btn {
-            padding: 10px 20px;
+            padding: 12px 20px; /* 高度与录入资产按钮保持一致 */
             background: #2980b9;
             color: white;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
+            font-size: 14px;
         }
         /* ================================================= */
 
         /* 响应式 */
         @media (max-width: 992px) { .form-grid { grid-template-columns: repeat(2, 1fr); } }
         @media (max-width: 768px) { 
-            .top-wrapper { flex-direction: column; align-items: stretch; }
-            .import-block { justify-content: center; padding-top: 0; margin-bottom: 15px; }
+            .action-row { grid-template-columns: 1fr; gap: 15px; }
+            .action-center, .action-right { grid-column: 1; display: flex; justify-content: center; padding-left: 0; }
             .form-grid { grid-template-columns: 1fr; } 
             .asset-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
             .asset-table th, .asset-table td { min-width: 100px; font-size: 13px; }
@@ -105,47 +114,40 @@
                 {% endif %}
             {% endwith %}
 
-            <!-- ========== 只修改这里：用 top-wrapper 包裹，实现同行 ========== -->
-            <div class="top-wrapper">
-                <!-- 一键导入（只加了布局，功能完全不变） -->
-                <div class="import-block">
-                    <form action="/import_assets" method="POST" enctype="multipart/form-data" style="display: flex; align-items: center; margin: 0;">
+            <form method="post" action="/add_asset" id="add-asset-form">
+                <div class="form-grid">
+                    <div class="form-group"><label>资产编号*</label><input type="text" name="asset_id" required placeholder=""></div>
+                    <div class="form-group"><label>资产名称*</label><input type="text" name="name" required placeholder=""></div>
+                    <div class="form-group"><label>设备型号</label><input type="text" name="model" placeholder=""></div>
+                    <div class="form-group"><label>设备分类*</label>
+                        <select name="category" required>
+                            <option value="">请选择分类</option>
+                            {% for cate in categories %}<option value="{{ cate }}">{{ cate }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group"><label>设备来源*</label>
+                        <select name="source" required>
+                            <option value="">请选择来源</option>
+                            {% for src in sources %}<option value="{{ src }}">{{ src }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group"><label>采购时间</label><input type="date" name="purchase_time"></div>
+                    <div class="form-group"><label>存放位置</label><input type="text" name="location" placeholder=""></div>
+                    <div class="form-group"><label>总数量*</label><input type="number" name="total_quantity" value="1" min="1" required></div>
+                </div>
+            </form>
+
+            <div class="action-row">
+                <div class="action-center">
+                    <button type="submit" form="add-asset-form" class="btn-submit">录入资产</button>
+                </div>
+                <div class="action-right">
+                    <form action="/import_assets" method="POST" enctype="multipart/form-data" class="import-form">
                         <input type="file" name="file" accept=".xlsx" required style="padding:6px;">
                         <button type="submit" class="import-btn">一键导入</button>
                     </form>
                 </div>
-
-                <!-- 录入资产表单（原代码完全不动） -->
-                <div class="entry-block">
-                    <form method="post" action="/add_asset">
-                        <div class="form-grid">
-                            <div class="form-group"><label>资产编号*</label><input type="text" name="asset_id" required placeholder=""></div>
-                            <div class="form-group"><label>资产名称*</label><input type="text" name="name" required placeholder=""></div>
-                            <div class="form-group"><label>设备型号</label><input type="text" name="model" placeholder=""></div>
-                            <div class="form-group"><label>设备分类*</label>
-                                <select name="category" required>
-                                    <option value="">请选择分类</option>
-                                    {% for cate in categories %}<option value="{{ cate }}">{{ cate }}</option>{% endfor %}
-                                </select>
-                            </div>
-                            <div class="form-group"><label>设备来源*</label>
-                                <select name="source" required>
-                                    <option value="">请选择来源</option>
-                                    {% for src in sources %}<option value="{{ src }}">{{ src }}</option>{% endfor %}
-                                </select>
-                            </div>
-                            <!-- 核心修复：采购时间input，配合CSS隐藏默认提示，选中后正常显示 -->
-                            <div class="form-group"><label>采购时间</label><input type="date" name="purchase_time"></div>
-                            <div class="form-group"><label>存放位置</label><input type="text" name="location" placeholder=""></div>
-                            <div class="form-group"><label>总数量*</label><input type="number" name="total_quantity" value="1" min="1" required></div>
-                            <div class="form-group"></div>
-                            <button type="submit" class="btn-submit">录入资产</button>
-                        </div>
-                    </form>
-                </div>
             </div>
-            <!-- ================================================= -->
-
             <table class="asset-table">
                 <thead>
                     <tr>

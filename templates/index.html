@@ -74,6 +74,10 @@
                     <div class="flash-message {{ 'flash-success' if '成功' in messages[0] else 'flash-error' }}">{{ messages[0] }}</div>
                 {% endif %}
             {% endwith %}
+            <form action="/import_assets" method="POST" enctype="multipart/form-data" style="margin-bottom:12px;">
+                  <input type="file" name="file" accept=".xlsx" required style="padding:6px;">
+                  <button type="submit" style="padding:8px 16px; background:#2980b9; color:white; border:none; border-radius:6px; cursor:pointer;">一键导入 Excel 资产</button>
+            </form>
             <form method="post" action="/add_asset">
                 <div class="form-grid">
                     <div class="form-group"><label>资产编号*</label><input type="text" name="asset_id" required placeholder=""></div>

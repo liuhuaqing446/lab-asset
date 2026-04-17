@@ -109,11 +109,11 @@ def add_asset():
         purchase_time = form_data.get("purchase_time", "")
         cur.execute("""
             INSERT INTO asset_info (asset_id, name, model, purchase_time, location, total_quantity, current_quantity, status)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, '在库')
         """, (
             form_data["asset_id"], form_data["name"], model_with_ext, purchase_time,
             form_data.get("location", ""), int(form_data.get("total_quantity", 1)),
-            int(form_data.get("total_quantity", 1)), "在库"
+            int(form_data.get("total_quantity", 1))
         ))
         db.commit()
         flash("✅ 资产添加成功！")
@@ -236,8 +236,8 @@ def do_record():
         cur.execute("UPDATE asset_info SET current_quantity=%s, status=%s WHERE asset_id=%s", (new_qty, new_status, asset_id))
         cur.execute("""
             INSERT INTO record_info (asset_id, person, type, quantity, time, purpose, handler)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, (asset_id, person, op_type, quantity, format_beijing_time(get_beijing_time()), purpose_with_return, ""))
+            VALUES (%s, %s, %s, %s, %s, %s, '')
+        """, (asset_id, person, op_type, quantity, format_beijing_time(get_beijing_time()), purpose_with_return))
         db.commit()
         flash("✅ 操作成功！")
     except Exception as e:
@@ -359,7 +359,8 @@ def api_asset():
         result.append({"asset": asset, "unreturned": unreturned})
     db.close()
     return jsonify(ok=True, data=result)
-    # ==============================
+
+# ==============================
 # 新增功能：Excel 导入 / 导出（只新增，不修改任何代码）
 # ==============================
 import pandas as pd
@@ -374,6 +375,10 @@ def import_assets():
     try:
         file = request.files["file"]
         df = pd.read_excel(file)
+
+        # 🔴 关键修复：强制保留 Excel 原顺序，不被 pandas 打乱
+        df = df.reset_index(drop=True)
+
         db = get_db()
         cur = db.cursor()
 
@@ -398,7 +403,7 @@ def import_assets():
             """, (asset_id, name, model_ext, purchase_time, location, total_quantity, total_quantity))
 
         db.commit()
-        flash("✅ Excel 资产导入完成！")
+        flash("✅ 一键导入完成！")
     except Exception as e:
         print("导入错误：", e)
         flash("❌ 导入失败，请检查Excel格式")

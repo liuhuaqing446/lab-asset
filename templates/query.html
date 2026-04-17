@@ -15,65 +15,19 @@
         .nav .logout { margin-left: auto; color: #e74c3c; }
         .content { background: #fff; padding: 30px 20px; border-radius: 0 0 12px 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.05); }
 
-        /* 🔴 核心修复：查询表单水平布局，所有元素同一行 */
-        .query-form { 
-            max-width: 100%; 
-            margin: 0 auto 30px; 
-            display: flex; 
-            gap: 20px; 
-            align-items: flex-end; 
-            flex-wrap: nowrap; 
-            justify-content: center;
-        }
-        .form-group { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 8px; 
-            min-width: 240px;
-        }
-        .form-group label { 
-            color: #34495e; 
-            font-size: 16px; 
-            font-weight: 500;
-            text-align: left;
-            width: 100%;
-        }
-        .form-group input, .form-group select { 
-            padding: 14px 16px; 
-            border: 1px solid #e1e8ed; 
-            border-radius: 8px; 
-            font-size: 15px; 
-            width: 100%;
-            transition: border-color 0.3s;
-        }
-        .form-group input::placeholder { 
-            color: transparent; 
-            display: none;
-        }
-        .form-group input:focus, .form-group select:focus { 
-            outline: none; 
-            border-color: #2980b9; 
-            box-shadow: 0 0 0 3px rgba(41,128,185,0.1); 
-        }
-        /* 🔴 按钮样式统一：查询和导出颜色一致 */
-        .btn-query, .btn-export { 
-            padding: 14px 35px; 
-            background: #2980b9; 
-            color: #fff; 
-            border: none; 
-            border-radius: 8px; 
-            font-size: 16px; 
-            font-weight: 600; 
-            cursor: pointer; 
-            white-space: nowrap; 
-            transition: background 0.3s;
-            margin-bottom: 8px;
-            text-decoration: none;
-            display: inline-block;
-        }
+        /* 核心：查询表单布局，强制同行，无换行 */
+        .query-form { max-width: 100%; margin: 0 auto 30px; display: flex; gap: 20px; align-items: flex-end; flex-wrap: nowrap; justify-content: center; }
+        .form-group { display: flex; flex-direction: column; gap: 8px; min-width: 240px; }
+        .form-group label { color: #34495e; font-size: 16px; font-weight: 500; text-align: left; width: 100%; }
+        .form-group input, .form-group select { padding: 14px 16px; border: 1px solid #e1e8ed; border-radius: 8px; font-size: 15px; width: 100%; transition: border-color 0.3s; }
+        .form-group input::placeholder { color: transparent; display: none; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #2980b9; box-shadow: 0 0 0 3px rgba(41,128,185,0.1); }
+        
+        /* 关键：查询/导出按钮 样式完全一致，颜色、大小、边距无差异 */
+        .btn-query, .btn-export { padding: 14px 35px; background: #2980b9; color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background 0.3s; margin-bottom: 8px; text-decoration: none; display: inline-block; }
         .btn-query:hover, .btn-export:hover { background: #1a5276; }
 
-        /* 查询结果样式：修复未归还记录布局 */
+        /* 查询结果样式：原样式完全保留 */
         .result-card { background: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 20px; border-left: 4px solid #2980b9; }
         .result-card h3 { color: #2c3e50; margin-bottom: 18px; font-size: 18px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
         .asset-info { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 15px; }
@@ -86,72 +40,33 @@
         .no-data { text-align: center; color: #7f8c8d; font-size: 16px; padding: 60px 0; line-height: 1.8; }
         .unreturned-title { color: #e74c3c; font-size: 15px; margin: 20px 0 10px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
         .unreturned-title::before { content: "⚠️"; font-size: 14px; }
-        /* 核心修复：未归还记录表格布局，适配手机端 */
-        .unreturned-table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-top: 10px;
-            table-layout: fixed;
-        }
-        .unreturned-table th { 
-            background: #e9ecef; 
-            padding: 12px 8px; 
-            text-align: center; 
-            font-size: 14px; 
-            color: #495057; 
-            border-bottom: 2px solid #dee2e6;
-            word-wrap: break-word;
-        }
-        .unreturned-table td { 
-            padding: 12px 8px; 
-            text-align: center; 
-            font-size: 14px; 
-            color: #2c3e50; 
-            border-bottom: 1px solid #dee2e6;
-            word-wrap: break-word;
-        }
+        .unreturned-table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }
+        .unreturned-table th { background: #e9ecef; padding: 12px 8px; text-align: center; font-size: 14px; color: #495057; border-bottom: 2px solid #dee2e6; word-wrap: break-word; }
+        .unreturned-table td { padding: 12px 8px; text-align: center; font-size: 14px; color: #2c3e50; border-bottom: 1px solid #dee2e6; word-wrap: break-word; }
         .status-in { color: #27ae60; font-weight: 700; }
         .status-out { color: #e74c3c; font-weight: 700; }
         .return-time { color: #e74c3c; font-weight: 600; }
 
-        /* 响应式：小屏幕自动换行 */
+        /* 响应式：小屏幕自动换行，无挤压 */
         @media (max-width: 992px) {
-            .query-form { flex-wrap: wrap; justify-content: center; }
+            .query-form { flex-wrap: wrap; }
             .asset-info { grid-template-columns: repeat(2, 1fr); }
             .unreturned-table th, .unreturned-table td { font-size: 13px; padding: 10px 6px; }
         }
         @media (max-width: 768px) {
-            .query-form { 
-                flex-direction: column; 
-                align-items: stretch; 
-                max-width: 100%;
-                gap: 15px;
-            }
-            .form-group { 
-                min-width: auto;
-                width: 100%;
-            }
-            .btn-query, .btn-export {
-                width: 100%;
-                margin-top: 10px;
-                text-align: center;
-            }
+            .query-form { flex-direction: column; align-items: stretch; gap: 15px !important; }
+            .form-group { min-width: auto; width: 100%; }
+            .btn-query, .btn-export { width: 100%; margin-top: 10px; text-align: center; margin-bottom: 0; }
             .asset-info { grid-template-columns: 1fr; }
-            /* 手机端未归还记录表格横向滚动 */
             .unreturned-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-            .unreturned-table th, .unreturned-table td { 
-                min-width: 100px; 
-                font-size: 13px;
-            }
+            .unreturned-table th, .unreturned-table td { min-width: 100px; font-size: 13px; }
             .nav { justify-content: flex-start; gap: 15px; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>{{ system_name }}</h1>
-        </div>
+        <div class="header"><h1>{{ system_name }}</h1></div>
         <div class="nav">
             <a href="/">资产列表</a>
             <a href="/record">出入记录</a>
@@ -159,7 +74,13 @@
             <a href="/logout" class="logout">退出登录</a>
         </div>
         <div class="content">
-            <!-- 🔴 修复后的表单：所有元素同一行，导出按钮在查询按钮右侧 -->
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <div class="flash-message {{ 'flash-success' if '成功' in messages[0] else 'flash-error' }}">{{ messages[0] }}</div>
+                {% endif %}
+            {% endwith %}
+
+            <!-- 无多余标签，查询+导出 直接同行，导出在查询右侧 -->
             <form class="query-form" id="queryForm">
                 <div class="form-group">
                     <label>资产编号/名称</label>

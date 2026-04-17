@@ -50,12 +50,17 @@
         .category-2 { background: #e67e22; }
         .category-3 { background: #7f8c8d; }
         .btn-delete { padding: 6px 14px; background: #e74c3c; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+        /* 新增：导入按钮样式，和录入按钮视觉统一 */
+        .import-btn { padding: 8px 16px; background: #2980b9; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+        .import-file { padding: 6px; margin-right: 8px; }
         /* 响应式 */
         @media (max-width: 992px) { .form-grid { grid-template-columns: repeat(2, 1fr); } }
         @media (max-width: 768px) { 
             .form-grid { grid-template-columns: 1fr; } 
             .asset-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
             .asset-table th, .asset-table td { min-width: 100px; font-size: 13px; }
+            .top-bar { flex-direction: column; align-items: stretch; gap: 15px !important; }
+            .import-form { width: 100%; }
         }
     </style>
 </head>
@@ -75,14 +80,16 @@
                 {% endif %}
             {% endwith %}
 
-            <!-- 🔴 布局修复：导入 + 录入 同一行 -->
-            <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px; flex-wrap: wrap;">
-                <form action="/import_assets" method="POST" enctype="multipart/form-data" style="display: flex; align-items: center; gap: 8px; margin:0;">
-                    <input type="file" name="file" accept=".xlsx" required style="padding:6px;">
-                    <button type="submit" style="padding:8px 16px; background:#2980b9; color:white; border:none; border-radius:6px; cursor:pointer;">一键导入</button>
+            <!-- 核心修复：导入+录入 严格同行，垂直居中，无错位 -->
+            <div style="display: flex; align-items: center; gap: 30px; margin-bottom: 25px; flex-wrap: wrap;" class="top-bar">
+                <!-- 一键导入表单 -->
+                <form action="/import_assets" method="POST" enctype="multipart/form-data" class="import-form" style="display: flex; align-items: center; margin: 0;">
+                    <input type="file" name="file" accept=".xlsx" required class="import-file">
+                    <button type="submit" class="import-btn">一键导入</button>
                 </form>
 
-                <form method="post" action="/add_asset" style="flex: 1; margin:0;">
+                <!-- 录入资产表单：占满剩余宽度，和导入按钮同行 -->
+                <form method="post" action="/add_asset" style="flex: 1; margin: 0;">
                     <div class="form-grid">
                         <div class="form-group"><label>资产编号*</label><input type="text" name="asset_id" required placeholder=""></div>
                         <div class="form-group"><label>资产名称*</label><input type="text" name="name" required placeholder=""></div>
@@ -99,6 +106,7 @@
                                 {% for src in sources %}<option value="{{ src }}">{{ src }}</option>{% endfor %}
                             </select>
                         </div>
+                        <!-- 核心修复：采购时间input，配合CSS隐藏默认提示，选中后正常显示 -->
                         <div class="form-group"><label>采购时间</label><input type="date" name="purchase_time"></div>
                         <div class="form-group"><label>存放位置</label><input type="text" name="location" placeholder=""></div>
                         <div class="form-group"><label>总数量*</label><input type="number" name="total_quantity" value="1" min="1" required></div>

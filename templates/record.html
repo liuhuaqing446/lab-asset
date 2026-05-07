@@ -184,6 +184,7 @@
             </table>
         </div>
     </div>
+    {% include 'ai_chat_widget.html' %}
     <script>
         const assets = [{% for asset in assets %}{ id: "{{ asset.asset_id }}", name: "{{ asset.name }}", model: "{{ asset.model_origin }}" },{% endfor %}];
         const assetInput = document.getElementById('assetInput');

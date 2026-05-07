@@ -424,26 +424,41 @@ def api_asset():
     return jsonify(ok=True, data=result)
 
 
-# 从用户消息中提取设备关键词
-def _extract_keyword(text):
-    if not text:
+# LLM 智能提取设备关键词（含指代消解 + 标点清洗）
+def _extract_keyword(text, history=''):
+    import re
+    if not text or not deepseek_client:
         return ''
-    stops = ['请问', '有没有', '是否有', '在哪里', '在哪', '多少', '怎么', '如何',
-             '什么', '哪个', '谁', '帮我', '我想', '我要', '查看', '查询', '搜索',
-             '找到', '告诉我', '知道', '吗', '呢', '啊', '？', '?', '！', '!', '。',
-             '的', '了', '是', '有', '可以', '能', '能不能', '借', '归还', '借用',
-             '一下', '你好', '谢谢', '请问你',
-             '设备', '资产', '仪器', '东西', '实验室', '现在', '目前', '帮忙',
-             '编号', '资产编号', '设备编号', '编号是', '编号几', '第几', '是什么']
-    result = text
-    for w in stops:
-        result = result.replace(w, ' ')
-    parts = [p.strip() for p in result.split() if len(p.strip()) >= 1]
-    return parts[0] if parts else ''
+    try:
+        ctx = f"对话上文：{history}\n" if history else ""
+        resp = deepseek_client.chat.completions.create(
+            model="deepseek-v4-flash",
+            messages=[
+                {"role": "system", "content": (
+                    "你是实体提取器。从用户问题中提取核心【设备名称】或【资产编号】。"
+                    "只输出一个词，不加标点、解释。无设备则输出 None。"
+                    "如用户用了'它''这个''那个'，根据对话上文推断具体设备名。"
+                    "例：'网线还有多少'→网线；'赛德型号'→赛德；'1号在哪'→1；"
+                    "'示波器在哪'→示波器；'有多少设备'→None。"
+                    "上文:'示波器在哪',问:'它多少钱'→示波器；上文:'网线还剩几个',问:'它能借吗'→网线。"
+                )},
+                {"role": "user", "content": f"{ctx}问题：{text}"}
+            ],
+            max_tokens=20,
+            temperature=0,
+            stream=False,
+        )
+        keyword = resp.choices[0].message.content.strip()
+        keyword = re.sub(r'[，。！？、；：""''（）()\s\n\r]', '', keyword)
+        if keyword and keyword.lower() != "none":
+            return keyword
+    except Exception as e:
+        print(f"关键词提取失败: {e}")
+    return ''
 
 
-# 获取数据库上下文（支持关键词精确检索）
-def get_chat_context(user_message=''):
+# 获取数据库上下文（支持 LLM 关键词精确检索 + 指代消解）
+def get_chat_context(user_message='', history=''):
     db = get_db()
     cur = db.cursor()
     try:
@@ -470,8 +485,8 @@ def get_chat_context(user_message=''):
         if cats:
             parts.append("分类: " + "，".join([f"{c['cat'] or '未分类'}{c['n']}件" for c in cats]))
 
-        # 3. 关键词检索设备详情
-        kw = _extract_keyword(user_message)
+        # 3. LLM提取关键词 → SQL参数化模糊检索（name + asset_id + model）
+        kw = _extract_keyword(user_message, history)
         if kw:
             cur.execute("""
                 SELECT asset_id, name, model, location, total_quantity,
@@ -545,17 +560,25 @@ def chat():
     req_data = request.json
     user_messages = req_data.get("messages", [])
 
-    # 取最后一条用户消息用于关键词提取
+    # 取最后一条用户消息
     last_user_msg = ''
     for m in reversed(user_messages):
         if m.get("role") == "user":
             last_user_msg = m.get("content", '')
             break
 
+    # 构造对话历史供指代消解（取最近3轮）
+    history_parts = []
+    for m in user_messages[-6:]:
+        role = "用户" if m.get("role") == "user" else "助手"
+        content = m.get("content", "")[:80]
+        history_parts.append(f"{role}: {content}")
+    history = "；".join(history_parts) if history_parts else ""
+
     try:
         # 注入实时数据库上下文（含关键词检索）
         try:
-            context = get_chat_context(last_user_msg)
+            context = get_chat_context(last_user_msg, history)
         except Exception as db_err:
             print(f"数据库上下文查询失败: {db_err}")
             context = "数据库暂时不可用，请基于已有知识回答"

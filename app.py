@@ -433,7 +433,8 @@ def _extract_keyword(text):
              '找到', '告诉我', '知道', '吗', '呢', '啊', '？', '?', '！', '!', '。',
              '的', '了', '是', '有', '可以', '能', '能不能', '借', '归还', '借用',
              '一下', '你好', '谢谢', '请问你',
-             '设备', '资产', '仪器', '东西', '实验室', '现在', '目前', '帮忙']
+             '设备', '资产', '仪器', '东西', '实验室', '现在', '目前', '帮忙',
+             '编号', '资产编号', '设备编号', '编号是', '编号几', '第几', '是什么']
     result = text
     for w in stops:
         result = result.replace(w, ' ')
@@ -483,16 +484,27 @@ def get_chat_context(user_message=''):
             if matches:
                 parts.append(f"---「{kw}」检索结果---")
                 for m in matches:
-                    mdl = m.get("model", "") or ""
-                    if "|" in mdl:
-                        mdl = mdl.split("|")[0]
-                    parts.append(
-                        f"  [{m['asset_id']}] {m['name']} | "
-                        f"型号:{mdl or '无'} | "
-                        f"位置:{m['location'] or '未填'} | "
-                        f"在库:{m['current_quantity']}/{m['total_quantity']} | "
-                        f"状态:{m['status']}"
-                    )
+                    # 解析 model 字段获取型号、分类、来源
+                    raw = m.get("model", "") or ""
+                    mdl_name, cat, src = "无型号", "未分类", "未知"
+                    if "|" in raw:
+                        parts_m = raw.split("|", 1)
+                        mdl_name = parts_m[0] or "无型号"
+                        if "-" in parts_m[1]:
+                            cat, src = parts_m[1].split("-", 1)
+                    elif "-" in raw:
+                        cat, src = raw.split("-", 1)
+                        mdl_name = "无型号"
+                    else:
+                        mdl_name = raw
+                    # 组装完整信息
+                    info = f"编号:{m['asset_id']} | 名称:{m['name']} | 型号:{mdl_name}"
+                    info += f" | 分类:{cat} | 来源:{src}"
+                    info += f" | 采购:{m['purchase_time'] or '未填'}"
+                    info += f" | 位置:{m['location'] or '未填'}"
+                    info += f" | 总数量:{m['total_quantity']} | 剩余:{m['current_quantity']}"
+                    info += f" | 状态:{m['status']}"
+                    parts.append(f"  {info}")
             else:
                 parts.append(f"---未检索到与「{kw}」匹配的设备---")
 

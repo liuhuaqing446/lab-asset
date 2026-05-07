@@ -53,17 +53,17 @@ if HAS_OPENAI:
         base_url="https://api.deepseek.com",
     )
 
-SYSTEM_PROMPT = """你是一个实验室资产管理AI助手，可直接查询数据库来回答用户问题。
+SYSTEM_PROMPT = """你现在是实验室管理员。每次对话我都会为你提供最新的数据库扫描结果。
 
-【当前数据库实时数据】
+【数据库实时数据】
 {context}
 
 【回答规则】
-- 如果用户询问资产数量、库存状态、谁在借用设备等，请直接基于上方数据简洁回答
-- 回答要精确，直接引用数据中的数字，控制在2-4句话
-- 如果用户想借用/归还设备，告知去「资产记录」页面操作
-- 如果用户想按关键词搜索特定资产详情，引导使用「资产查询」页面
-- 语气亲切专业，不要啰嗦"""
+- 基于上方数据中的 name（名称）、location（存放位置）、current_quantity（在库数量）、status（状态）精确回答
+- 如果 current_quantity 为 0 或状态为「借出」，告知用户该设备已被领完或借出
+- 如果数据中找不到用户询问的设备，诚实告知「库中暂无此设备，建议去资产查询页面确认」
+- 回答控制在2-4句话，直接给出位置、数量等关键信息
+- 借用/归还操作引导去「资产记录」页面"""
 
 
 # 定时唤醒服务（Render防休眠，本地不启动）
@@ -424,19 +424,41 @@ def api_asset():
     return jsonify(ok=True, data=result)
 
 
-# 快速获取数据库摘要，注入 AI 对话上下文
-def get_chat_context():
+# 从用户消息中提取设备关键词
+def _extract_keyword(text):
+    if not text:
+        return ''
+    stops = ['请问', '有没有', '是否有', '在哪里', '在哪', '多少', '怎么', '如何',
+             '什么', '哪个', '谁', '帮我', '我想', '我要', '查看', '查询', '搜索',
+             '找到', '告诉我', '知道', '吗', '呢', '啊', '？', '?', '！', '!', '。',
+             '的', '了', '是', '有', '可以', '能', '能不能', '借', '归还', '借用',
+             '一下', '你好', '谢谢', '请问你',
+             '设备', '资产', '仪器', '东西', '实验室', '现在', '目前', '帮忙']
+    result = text
+    for w in stops:
+        result = result.replace(w, ' ')
+    parts = [p.strip() for p in result.split() if len(p.strip()) >= 2]
+    return parts[0] if parts else ''
+
+
+# 获取数据库上下文（支持关键词精确检索）
+def get_chat_context(user_message=''):
     db = get_db()
     cur = db.cursor()
     try:
-        # 资产总数与状态
+        parts = []
+
+        # 1. 资产总览统计
         cur.execute("SELECT COUNT(*) as n FROM asset_info")
         total = cur.fetchone()["n"]
         cur.execute("SELECT status, COUNT(*) as n FROM asset_info GROUP BY status")
-        status_rows = cur.fetchall()
-        status_map = {r["status"]: r["n"] for r in status_rows}
+        smap = {r["status"]: r["n"] for r in cur.fetchall()}
+        parts.append(f"资产总计{total}件")
+        for s in ["在库", "借出"]:
+            if s in smap:
+                parts.append(f"{s}{smap[s]}件")
 
-        # 分类统计
+        # 2. 分类统计
         cur.execute("""
             SELECT SUBSTRING_INDEX(SUBSTRING_INDEX(model,'|',-1),'-',1) AS cat,
                    COUNT(*) AS n
@@ -444,35 +466,57 @@ def get_chat_context():
             GROUP BY cat ORDER BY n DESC
         """)
         cats = cur.fetchall()
+        if cats:
+            parts.append("分类: " + "，".join([f"{c['cat'] or '未分类'}{c['n']}件" for c in cats]))
 
-        # 最近5条领用记录
+        # 3. 关键词检索设备详情
+        kw = _extract_keyword(user_message)
+        if kw:
+            cur.execute("""
+                SELECT asset_id, name, model, location, total_quantity,
+                       current_quantity, status, purchase_time
+                FROM asset_info
+                WHERE name LIKE %s OR asset_id LIKE %s OR model LIKE %s
+                LIMIT 8
+            """, (f"%{kw}%", f"%{kw}%", f"%{kw}%"))
+            matches = cur.fetchall()
+            if matches:
+                parts.append(f"---「{kw}」检索结果---")
+                for m in matches:
+                    mdl = m.get("model", "") or ""
+                    if "|" in mdl:
+                        mdl = mdl.split("|")[0]
+                    parts.append(
+                        f"  [{m['asset_id']}] {m['name']} | "
+                        f"型号:{mdl or '无'} | "
+                        f"位置:{m['location'] or '未填'} | "
+                        f"在库:{m['current_quantity']}/{m['total_quantity']} | "
+                        f"状态:{m['status']}"
+                    )
+            else:
+                parts.append(f"---未检索到与「{kw}」匹配的设备---")
+
+        # 4. 最近领用记录
         cur.execute("""
             SELECT r.person, r.asset_id, a.name, r.quantity, r.time
-            FROM record_info r
-            LEFT JOIN asset_info a ON r.asset_id = a.asset_id
+            FROM record_info r LEFT JOIN asset_info a ON r.asset_id = a.asset_id
             WHERE r.type = '领用'
             ORDER BY r.time DESC LIMIT 5
         """)
         recent = cur.fetchall()
-
-        parts = [f"资产总计{total}件"]
-        for s in ["在库", "借出"]:
-            if s in status_map:
-                parts.append(f"{s}{status_map[s]}件")
-        if cats:
-            parts.append("分类: " + "，".join([f"{c['cat'] or '未分类'}{c['n']}件" for c in cats]))
         if recent:
             items = []
             for r in recent:
                 name = r.get("name") or "未知"
                 items.append(f"{r['person']}→{name}×{r['quantity']}({r['time']})")
             parts.append("最近领用: " + "；".join(items))
-        return "；".join(parts)
+
+        return "\n".join(parts)
     finally:
         db.close()
 
 
-# AI 对话接口（流式响应）
+# AI 对话接口（流式响应 + 关键词检索）
 @app.route("/chat", methods=["POST"])
 def chat():
     if not deepseek_client:
@@ -481,8 +525,15 @@ def chat():
     req_data = request.json
     user_messages = req_data.get("messages", [])
 
-    # 注入实时数据库上下文
-    context = get_chat_context()
+    # 取最后一条用户消息用于关键词提取
+    last_user_msg = ''
+    for m in reversed(user_messages):
+        if m.get("role") == "user":
+            last_user_msg = m.get("content", '')
+            break
+
+    # 注入实时数据库上下文（含关键词检索）
+    context = get_chat_context(last_user_msg)
     system_content = SYSTEM_PROMPT.format(context=context)
 
     messages = [{"role": "system", "content": system_content}] + user_messages

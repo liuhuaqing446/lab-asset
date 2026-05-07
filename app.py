@@ -5,10 +5,20 @@ import os
 import requests
 import threading
 import time
-from openai import OpenAI
-from dotenv import load_dotenv
 
-load_dotenv()
+# AI 客服依赖 —— 未安装时优雅降级，不影响核心功能
+try:
+    from openai import OpenAI
+    HAS_OPENAI = True
+except ImportError:
+    HAS_OPENAI = False
+    print("⚠️ openai 未安装，AI 客服功能暂不可用")
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 # 数据库配置（无需修改）
 DB_CONFIG = {
@@ -32,14 +42,16 @@ DEFAULT_RETURN_DAYS = 1
 WAKE_UP_INTERVAL = 600
 SELF_URL = os.environ.get('SELF_URL', 'https://lab-asset.onrender.com')
 
-app = Flask(__name__, template_folder='.')
+app = Flask(__name__)
 app.secret_key = "lab_asset_2026_final_secure"
 
-# DeepSeek AI 客户端
-deepseek_client = OpenAI(
-    api_key=os.environ.get("DEEPSEEK_API_KEY", "your-api-key-here"),
-    base_url="https://api.deepseek.com",
-)
+# DeepSeek AI 客户端（仅当 openai 已安装时初始化）
+deepseek_client = None
+if HAS_OPENAI:
+    deepseek_client = OpenAI(
+        api_key=os.environ.get("DEEPSEEK_API_KEY", "your-api-key-here"),
+        base_url="https://api.deepseek.com",
+    )
 
 SYSTEM_PROMPT = """你是一个专业、友好的实验室资产管理助手。你的职责是：
 - 耐心解答用户关于实验室设备的问题。
@@ -409,23 +421,30 @@ def api_asset():
 # AI 对话接口（流式响应）
 @app.route("/chat", methods=["POST"])
 def chat():
+    if not deepseek_client:
+        return jsonify(ok=False, msg="AI 服务未配置"), 503
+
     req_data = request.json
     user_messages = req_data.get("messages", [])
 
     messages = [{"role": "system", "content": SYSTEM_PROMPT}] + user_messages
 
-    stream = deepseek_client.chat.completions.create(
-        model="deepseek-chat",
-        messages=messages,
-        stream=True,
-    )
+    try:
+        stream = deepseek_client.chat.completions.create(
+            model="deepseek-chat",
+            messages=messages,
+            stream=True,
+        )
 
-    def generate():
-        for chunk in stream:
-            if chunk.choices[0].delta.content:
-                yield chunk.choices[0].delta.content
+        def generate():
+            for chunk in stream:
+                if chunk.choices[0].delta.content:
+                    yield chunk.choices[0].delta.content
 
-    return Response(generate(), mimetype="text/plain")
+        return Response(generate(), mimetype="text/plain")
+    except Exception as e:
+        print(f"AI 对话错误: {e}")
+        return jsonify(ok=False, msg="AI 服务暂时不可用"), 500
 
 
 # ==============================

@@ -438,7 +438,7 @@ def _extract_keyword(text):
     result = text
     for w in stops:
         result = result.replace(w, ' ')
-    parts = [p.strip() for p in result.split() if len(p.strip()) >= 2]
+    parts = [p.strip() for p in result.split() if len(p.strip()) >= 1]
     return parts[0] if parts else ''
 
 

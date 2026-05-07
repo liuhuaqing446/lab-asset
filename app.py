@@ -552,15 +552,19 @@ def chat():
             last_user_msg = m.get("content", '')
             break
 
-    # 注入实时数据库上下文（含关键词检索）
-    context = get_chat_context(last_user_msg)
-    system_content = SYSTEM_PROMPT.format(context=context)
-
-    messages = [{"role": "system", "content": system_content}] + user_messages
-
     try:
+        # 注入实时数据库上下文（含关键词检索）
+        try:
+            context = get_chat_context(last_user_msg)
+        except Exception as db_err:
+            print(f"数据库上下文查询失败: {db_err}")
+            context = "数据库暂时不可用，请基于已有知识回答"
+
+        system_content = SYSTEM_PROMPT.format(context=context)
+        messages = [{"role": "system", "content": system_content}] + user_messages
+
         stream = deepseek_client.chat.completions.create(
-            model="deepseek-chat",
+            model="deepseek-deepseek-v4-flash",
             messages=messages,
             stream=True,
         )

@@ -53,11 +53,17 @@ if HAS_OPENAI:
         base_url="https://api.deepseek.com",
     )
 
-SYSTEM_PROMPT = """你是一个专业、友好的实验室资产管理助手。你的职责是：
-- 耐心解答用户关于实验室设备的问题。
-- 如果用户询问如何借用设备，请告知其前往 '资产记录' (record.html) 页面填写记录单。
-- 如果用户想查询资产，请引导其使用 '资产查询' (query.html) 页面提供的搜索功能。
-- 回复尽量简洁清晰，语气亲切。"""
+SYSTEM_PROMPT = """你是一个实验室资产管理AI助手，可直接查询数据库来回答用户问题。
+
+【当前数据库实时数据】
+{context}
+
+【回答规则】
+- 如果用户询问资产数量、库存状态、谁在借用设备等，请直接基于上方数据简洁回答
+- 回答要精确，直接引用数据中的数字，控制在2-4句话
+- 如果用户想借用/归还设备，告知去「资产记录」页面操作
+- 如果用户想按关键词搜索特定资产详情，引导使用「资产查询」页面
+- 语气亲切专业，不要啰嗦"""
 
 
 # 定时唤醒服务（Render防休眠，本地不启动）
@@ -418,6 +424,54 @@ def api_asset():
     return jsonify(ok=True, data=result)
 
 
+# 快速获取数据库摘要，注入 AI 对话上下文
+def get_chat_context():
+    db = get_db()
+    cur = db.cursor()
+    try:
+        # 资产总数与状态
+        cur.execute("SELECT COUNT(*) as n FROM asset_info")
+        total = cur.fetchone()["n"]
+        cur.execute("SELECT status, COUNT(*) as n FROM asset_info GROUP BY status")
+        status_rows = cur.fetchall()
+        status_map = {r["status"]: r["n"] for r in status_rows}
+
+        # 分类统计
+        cur.execute("""
+            SELECT SUBSTRING_INDEX(SUBSTRING_INDEX(model,'|',-1),'-',1) AS cat,
+                   COUNT(*) AS n
+            FROM asset_info WHERE model LIKE '%|%'
+            GROUP BY cat ORDER BY n DESC
+        """)
+        cats = cur.fetchall()
+
+        # 最近5条领用记录
+        cur.execute("""
+            SELECT r.person, r.asset_id, a.name, r.quantity, r.time
+            FROM record_info r
+            LEFT JOIN asset_info a ON r.asset_id = a.asset_id
+            WHERE r.type = '领用'
+            ORDER BY r.time DESC LIMIT 5
+        """)
+        recent = cur.fetchall()
+
+        parts = [f"资产总计{total}件"]
+        for s in ["在库", "借出"]:
+            if s in status_map:
+                parts.append(f"{s}{status_map[s]}件")
+        if cats:
+            parts.append("分类: " + "，".join([f"{c['cat'] or '未分类'}{c['n']}件" for c in cats]))
+        if recent:
+            items = []
+            for r in recent:
+                name = r.get("name") or "未知"
+                items.append(f"{r['person']}→{name}×{r['quantity']}({r['time']})")
+            parts.append("最近领用: " + "；".join(items))
+        return "；".join(parts)
+    finally:
+        db.close()
+
+
 # AI 对话接口（流式响应）
 @app.route("/chat", methods=["POST"])
 def chat():
@@ -427,7 +481,11 @@ def chat():
     req_data = request.json
     user_messages = req_data.get("messages", [])
 
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}] + user_messages
+    # 注入实时数据库上下文
+    context = get_chat_context()
+    system_content = SYSTEM_PROMPT.format(context=context)
+
+    messages = [{"role": "system", "content": system_content}] + user_messages
 
     try:
         stream = deepseek_client.chat.completions.create(

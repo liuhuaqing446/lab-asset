@@ -40,7 +40,7 @@ SOURCES = ["自购", "企业", "学校"]
 DEFAULT_RETURN_DAYS = 1
 # 定时唤醒配置
 WAKE_UP_INTERVAL = 600
-SELF_URL = os.environ.get('SELF_URL', 'https://lab-asset.onrender.com')
+SELF_URL = os.environ.get('SELF_URL', 'https://lab-asset-2.onrender.com')
 
 app = Flask(__name__)
 app.secret_key = "lab_asset_2026_final_secure"

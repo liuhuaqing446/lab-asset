@@ -564,7 +564,7 @@ def chat():
         messages = [{"role": "system", "content": system_content}] + user_messages
 
         stream = deepseek_client.chat.completions.create(
-            model="deepseek-deepseek-v4-flash",
+            model="deepseek-v4-flash",
             messages=messages,
             stream=True,
         )

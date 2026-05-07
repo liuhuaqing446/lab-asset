@@ -53,17 +53,16 @@ if HAS_OPENAI:
         base_url="https://api.deepseek.com",
     )
 
-SYSTEM_PROMPT = """你现在是实验室管理员。每次对话我都会为你提供最新的数据库扫描结果。
+SYSTEM_PROMPT = """你是实验室资产管理员，可直接查询数据库。
 
-【数据库实时数据】
 {context}
 
 【回答规则】
-- 基于上方数据中的 name（名称）、location（存放位置）、current_quantity（在库数量）、status（状态）精确回答
-- 如果 current_quantity 为 0 或状态为「借出」，告知用户该设备已被领完或借出
-- 如果数据中找不到用户询问的设备，诚实告知「库中暂无此设备，建议去资产查询页面确认」
-- 回答控制在2-4句话，直接给出位置、数量等关键信息
-- 借用/归还操作引导去「资产记录」页面"""
+- 先看上方【实时数据库信息】，有数据就基于数据精确回答
+- 回答要包含编号、名称、型号、位置、数量、状态等关键字段
+- 数据中找不到用户问的设备 → 诚实告知「库中暂无记录，建议去资产查询页面确认」
+- 用户要借用/归还 → 引导去「资产记录」页面操作
+- 回答简洁专业，2-5句话"""
 
 
 # 定时唤醒服务（Render防休眠，本地不启动）
@@ -424,131 +423,214 @@ def api_asset():
     return jsonify(ok=True, data=result)
 
 
-# LLM 智能提取设备关键词（含指代消解 + 标点清洗）
-def _extract_keyword(text, history=''):
+# ============================================================
+# 智能检索引擎：LLM提取关键词 → 多字段跨表搜索 → RAG上下文注入
+# ============================================================
+
+def _llm_extract_keyword(text):
+    """使用 LLM 智能提取搜索关键词"""
     import re
     if not text or not deepseek_client:
         return ''
     try:
-        ctx = f"对话上文：{history}\n" if history else ""
         resp = deepseek_client.chat.completions.create(
             model="deepseek-v4-flash",
             messages=[
                 {"role": "system", "content": (
-                    "你是实体提取器。从用户问题中提取核心【设备名称】或【资产编号】。"
-                    "只输出一个词，不加标点、解释。无设备则输出 None。"
-                    "如用户用了'它''这个''那个'，根据对话上文推断具体设备名。"
-                    "例：'网线还有多少'→网线；'赛德型号'→赛德；'1号在哪'→1；"
-                    "'示波器在哪'→示波器；'有多少设备'→None。"
-                    "上文:'示波器在哪',问:'它多少钱'→示波器；上文:'网线还剩几个',问:'它能借吗'→网线。"
+                    "你是实验室数据分析师。从用户问题中提取用于搜索数据库的关键词。"
+                    "查设备→提取设备名或型号；查领用人→提取资产名；查位置→提取位置词。"
+                    "只输出1-2个最核心的关键词，不要任何标点、解释。"
+                    "如果用户只是打招呼或问总数这种不需要检索具体设备的问题，输出 None。"
+                    "例：'杜邦线的相关信息'→杜邦线；'CAT6网线在哪'→CAT6；"
+                    "'谁拿走了示波器'→示波器；'A5柜子有什么'→A5；"
+                    "'你好'→None；'总共多少设备'→None。"
                 )},
-                {"role": "user", "content": f"{ctx}问题：{text}"}
+                {"role": "user", "content": text}
             ],
             max_tokens=20,
             temperature=0,
             stream=False,
         )
-        keyword = resp.choices[0].message.content.strip()
-        keyword = re.sub(r'[，。！？、；：""''（）()\s\n\r]', '', keyword)
-        if keyword and keyword.lower() != "none":
-            return keyword
+        kw = resp.choices[0].message.content.strip()
+        kw = re.sub(r'[，。！？、；：""''（）()\s\n\r]', '', kw)
+        if kw and kw.lower() != 'none':
+            return kw
     except Exception as e:
-        print(f"关键词提取失败: {e}")
+        print(f"LLM关键词提取失败: {e}，使用兜底方案")
     return ''
 
 
-# 获取数据库上下文（支持 LLM 关键词精确检索 + 指代消解）
-def get_chat_context(user_message='', history=''):
+def _fallback_extract(text):
+    """LLM提取失败时的兜底：简单正则取最长有效片段"""
+    import re
+    # 去掉最常见虚词
+    for w in ['请问', '有没有', '在哪里', '多少', '怎么', '如何', '什么', '哪个',
+              '的相关信息', '介绍一下', '讲讲', '你好', '谢谢', '实验室', '设备', '资产']:
+        text = text.replace(w, ' ')
+    parts = [p.strip() for p in text.split() if len(p.strip()) >= 1]
+    return max(parts, key=len) if parts else ''
+
+
+def _extract_keyword(text):
+    """关键词提取：LLM优先，失败则兜底"""
+    kw = _llm_extract_keyword(text)
+    return kw if kw else _fallback_extract(text)
+
+
+def _parse_model(raw):
+    """解析 model 字段 → (型号名, 分类, 来源)"""
+    if not raw:
+        return "无型号", "未分类", "未知"
+    if "|" in raw:
+        p = raw.split("|", 1)
+        mdl = p[0] or "无型号"
+        if "-" in p[1]:
+            cat, src = p[1].split("-", 1)
+            return mdl, cat, src
+        return mdl, "未分类", "未知"
+    if "-" in raw:
+        cat, src = raw.split("-", 1)
+        return "无型号", cat, src
+    return raw, "未分类", "未知"
+
+
+def _search_all(keyword):
+    """多字段、跨表检索：asset_info(4字段) + record_info"""
+    if not keyword:
+        return None
     db = get_db()
     cur = db.cursor()
     try:
-        parts = []
+        result = {'assets': [], 'records': [], 'borrowing': []}
 
-        # 1. 资产总览统计
-        cur.execute("SELECT COUNT(*) as n FROM asset_info")
-        total = cur.fetchone()["n"]
-        cur.execute("SELECT status, COUNT(*) as n FROM asset_info GROUP BY status")
-        smap = {r["status"]: r["n"] for r in cur.fetchall()}
-        parts.append(f"资产总计{total}件")
-        for s in ["在库", "借出"]:
-            if s in smap:
-                parts.append(f"{s}{smap[s]}件")
-
-        # 2. 分类统计
+        # 1. 资产全字段检索：name + model + location + asset_id
         cur.execute("""
-            SELECT SUBSTRING_INDEX(SUBSTRING_INDEX(model,'|',-1),'-',1) AS cat,
-                   COUNT(*) AS n
-            FROM asset_info WHERE model LIKE '%|%'
-            GROUP BY cat ORDER BY n DESC
-        """)
-        cats = cur.fetchall()
-        if cats:
-            parts.append("分类: " + "，".join([f"{c['cat'] or '未分类'}{c['n']}件" for c in cats]))
+            SELECT * FROM asset_info
+            WHERE name LIKE %s OR model LIKE %s OR location LIKE %s OR asset_id LIKE %s
+            LIMIT 10
+        """, (f"%{keyword}%", f"%{keyword}%", f"%{keyword}%", f"%{keyword}%"))
+        result['assets'] = cur.fetchall()
 
-        # 3. LLM提取关键词 → SQL参数化模糊检索（name + asset_id + model）
-        kw = _extract_keyword(user_message, history)
-        if kw:
-            cur.execute("""
-                SELECT asset_id, name, model, location, total_quantity,
-                       current_quantity, status, purchase_time
-                FROM asset_info
-                WHERE name LIKE %s OR asset_id LIKE %s OR model LIKE %s
-                LIMIT 8
-            """, (f"%{kw}%", f"%{kw}%", f"%{kw}%"))
-            matches = cur.fetchall()
-            if matches:
-                parts.append(f"---「{kw}」检索结果---")
-                for m in matches:
-                    # 解析 model 字段获取型号、分类、来源
-                    raw = m.get("model", "") or ""
-                    mdl_name, cat, src = "无型号", "未分类", "未知"
-                    if "|" in raw:
-                        parts_m = raw.split("|", 1)
-                        mdl_name = parts_m[0] or "无型号"
-                        if "-" in parts_m[1]:
-                            cat, src = parts_m[1].split("-", 1)
-                    elif "-" in raw:
-                        cat, src = raw.split("-", 1)
-                        mdl_name = "无型号"
-                    else:
-                        mdl_name = raw
-                    # 组装完整信息
-                    info = f"编号:{m['asset_id']} | 名称:{m['name']} | 型号:{mdl_name}"
-                    info += f" | 分类:{cat} | 来源:{src}"
-                    info += f" | 采购:{m['purchase_time'] or '未填'}"
-                    info += f" | 位置:{m['location'] or '未填'}"
-                    info += f" | 总数量:{m['total_quantity']} | 剩余:{m['current_quantity']}"
-                    info += f" | 状态:{m['status']}"
-                    parts.append(f"  {info}")
-            else:
-                parts.append(f"---未检索到与「{kw}」匹配的设备---")
+        # 2. 出入记录检索：person + asset_id + purpose
+        cur.execute("""
+            SELECT r.*, a.name AS asset_name
+            FROM record_info r
+            LEFT JOIN asset_info a ON r.asset_id = a.asset_id
+            WHERE r.person LIKE %s OR r.asset_id LIKE %s OR r.purpose LIKE %s
+            ORDER BY r.time DESC LIMIT 10
+        """, (f"%{keyword}%", f"%{keyword}%", f"%{keyword}%"))
+        result['records'] = cur.fetchall()
 
-        # 4. 当前借出未还（领用-归还>0）
+        # 3. 当前借出未还
         cur.execute("""
             SELECT r.asset_id, a.name, r.person,
-                   COALESCE(SUM(CASE WHEN r.type='领用' THEN r.quantity ELSE 0 END), 0) -
-                   COALESCE(SUM(CASE WHEN r.type='归还' THEN r.quantity ELSE 0 END), 0) AS unpaid,
+                   COALESCE(SUM(CASE WHEN r.type='领用' THEN r.quantity ELSE 0 END),0) -
+                   COALESCE(SUM(CASE WHEN r.type='归还' THEN r.quantity ELSE 0 END),0) AS unpaid,
                    MAX(CASE WHEN r.type='领用' THEN r.time END) AS borrow_time
             FROM record_info r
             LEFT JOIN asset_info a ON r.asset_id = a.asset_id
             GROUP BY r.asset_id, a.name, r.person
             HAVING unpaid > 0
-            ORDER BY borrow_time DESC
-            LIMIT 15
+            ORDER BY borrow_time DESC LIMIT 15
         """)
-        unpaid = cur.fetchall()
-        if unpaid:
-            items = []
-            for u in unpaid:
-                name = u.get("name") or "未知"
-                items.append(f"{u['person']} 借 {name}×{u['unpaid']}({u['borrow_time']})，未还")
-            parts.append("当前借出未还: " + "；".join(items))
-        else:
-            parts.append("当前无借出未还记录，全部已归还")
+        result['borrowing'] = cur.fetchall()
 
-        return "\n".join(parts)
+        return result
     finally:
         db.close()
+
+
+def _format_context(search_result, keyword):
+    """将检索结果格式化为 AI 可读的结构化上下文"""
+    parts = ["【实时数据库信息】"]
+
+    if not search_result:
+        parts.append("(数据库暂不可用)")
+        return "\n".join(parts)
+
+    assets = search_result.get('assets', [])
+    records = search_result.get('records', [])
+    borrowing = search_result.get('borrowing', [])
+
+    # --- 资产匹配 ---
+    if assets:
+        parts.append(f"--- 「{keyword}」资产匹配 ({len(assets)}条) ---")
+        for a in assets:
+            mdl, cat, src = _parse_model(a.get("model", ""))
+            info = (f"编号:{a['asset_id']} | 名称:{a['name']} | 型号:{mdl}"
+                    f" | 分类:{cat} | 来源:{src}"
+                    f" | 采购:{a.get('purchase_time') or '未填'}"
+                    f" | 位置:{a.get('location') or '未填'}"
+                    f" | 总数:{a['total_quantity']} | 剩余:{a['current_quantity']}"
+                    f" | 状态:{a['status']}")
+            parts.append(info)
+    elif keyword:
+        parts.append(f"--- 未检索到与「{keyword}」匹配的资产 ---")
+
+    # --- 出入记录 ---
+    if records:
+        parts.append(f"--- 「{keyword}」相关记录 ({len(records)}条) ---")
+        for r in records:
+            rtype = "领用" if r['type'] == '领用' else "归还"
+            aname = r.get('asset_name') or '未知'
+            purpose = r.get('purpose') or ''
+            # 解析用途中的归还时间
+            if '预计归还：' in purpose and '|' in purpose:
+                purpose = purpose.split('|')[0]
+            parts.append(f"{r['person']} {rtype} {aname}×{r['quantity']} ({r['time']}) 用途:{purpose or '无'}")
+
+    # --- 当前借出 ---
+    if borrowing:
+        items = []
+        for b in borrowing:
+            name = b.get("name") or "未知"
+            items.append(f"{b['person']}借{name}×{b['unpaid']}({b['borrow_time']})未还")
+        parts.append("当前借出未还: " + "；".join(items))
+    else:
+        parts.append("当前无借出未还记录")
+
+    return "\n".join(parts)
+
+
+def _get_summary():
+    """快速获取资产总览统计"""
+    db = get_db()
+    cur = db.cursor()
+    try:
+        cur.execute("SELECT COUNT(*) as n FROM asset_info")
+        total = cur.fetchone()["n"]
+        cur.execute("SELECT status, COUNT(*) as n FROM asset_info GROUP BY status")
+        smap = {r["status"]: r["n"] for r in cur.fetchall()}
+        cur.execute("""
+            SELECT SUBSTRING_INDEX(SUBSTRING_INDEX(model,'|',-1),'-',1) AS cat,
+                   COUNT(*) AS n FROM asset_info WHERE model LIKE '%|%'
+            GROUP BY cat ORDER BY n DESC
+        """)
+        cats = cur.fetchall()
+        parts = [f"资产总计{total}件"]
+        for s in ["在库", "借出"]:
+            if s in smap:
+                parts.append(f"{s}{smap[s]}件")
+        if cats:
+            parts.append("分类: " + "，".join([f"{c['cat'] or '未分类'}{c['n']}件" for c in cats]))
+        return "；".join(parts)
+    finally:
+        db.close()
+
+
+def get_chat_context(user_message=''):
+    """一站式：提取关键词 → 跨表检索 → 格式化上下文"""
+    # 始终获取总览统计
+    summary = _get_summary()
+    kw = _extract_keyword(user_message)
+    if kw:
+        result = _search_all(kw)
+        formatted = _format_context(result, kw)
+        # 在检索结果前插入总览
+        return formatted.replace("【实时数据库信息】",
+                                 f"【实时数据库信息】\n总览: {summary}")
+    else:
+        return f"【实时数据库信息】\n总览: {summary}\n(用户未指定具体设备，请基于总览回答)"
 
 
 # AI 对话接口（流式响应 + 关键词检索）
@@ -567,21 +649,13 @@ def chat():
             last_user_msg = m.get("content", '')
             break
 
-    # 构造对话历史供指代消解（取最近3轮）
-    history_parts = []
-    for m in user_messages[-6:]:
-        role = "用户" if m.get("role") == "user" else "助手"
-        content = m.get("content", "")[:80]
-        history_parts.append(f"{role}: {content}")
-    history = "；".join(history_parts) if history_parts else ""
-
     try:
-        # 注入实时数据库上下文（含关键词检索）
+        # 智能检索：LLM提取关键词 → 多字段跨表搜索 → 格式化上下文
         try:
-            context = get_chat_context(last_user_msg, history)
+            context = get_chat_context(last_user_msg)
         except Exception as db_err:
             print(f"数据库上下文查询失败: {db_err}")
-            context = "数据库暂时不可用，请基于已有知识回答"
+            context = "【实时数据库信息】\n数据库暂时不可用，请基于已有知识回答"
 
         system_content = SYSTEM_PROMPT.format(context=context)
         messages = [{"role": "system", "content": system_content}] + user_messages

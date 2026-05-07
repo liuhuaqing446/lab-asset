@@ -496,20 +496,28 @@ def get_chat_context(user_message=''):
             else:
                 parts.append(f"---未检索到与「{kw}」匹配的设备---")
 
-        # 4. 最近领用记录
+        # 4. 当前借出未还（领用-归还>0）
         cur.execute("""
-            SELECT r.person, r.asset_id, a.name, r.quantity, r.time
-            FROM record_info r LEFT JOIN asset_info a ON r.asset_id = a.asset_id
-            WHERE r.type = '领用'
-            ORDER BY r.time DESC LIMIT 5
+            SELECT r.asset_id, a.name, r.person,
+                   COALESCE(SUM(CASE WHEN r.type='领用' THEN r.quantity ELSE 0 END), 0) -
+                   COALESCE(SUM(CASE WHEN r.type='归还' THEN r.quantity ELSE 0 END), 0) AS unpaid,
+                   MAX(CASE WHEN r.type='领用' THEN r.time END) AS borrow_time
+            FROM record_info r
+            LEFT JOIN asset_info a ON r.asset_id = a.asset_id
+            GROUP BY r.asset_id, a.name, r.person
+            HAVING unpaid > 0
+            ORDER BY borrow_time DESC
+            LIMIT 15
         """)
-        recent = cur.fetchall()
-        if recent:
+        unpaid = cur.fetchall()
+        if unpaid:
             items = []
-            for r in recent:
-                name = r.get("name") or "未知"
-                items.append(f"{r['person']}→{name}×{r['quantity']}({r['time']})")
-            parts.append("最近领用: " + "；".join(items))
+            for u in unpaid:
+                name = u.get("name") or "未知"
+                items.append(f"{u['person']} 借 {name}×{u['unpaid']}({u['borrow_time']})，未还")
+            parts.append("当前借出未还: " + "；".join(items))
+        else:
+            parts.append("当前无借出未还记录，全部已归还")
 
         return "\n".join(parts)
     finally:

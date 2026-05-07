@@ -1,10 +1,14 @@
-from flask import Flask, render_template, request, flash, redirect, session, jsonify
+from flask import Flask, render_template, request, flash, redirect, session, jsonify, Response
 import pymysql
 from datetime import datetime, timedelta
 import os
 import requests
 import threading
 import time
+from openai import OpenAI
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # 数据库配置（无需修改）
 DB_CONFIG = {
@@ -28,8 +32,21 @@ DEFAULT_RETURN_DAYS = 1
 WAKE_UP_INTERVAL = 600
 SELF_URL = os.environ.get('SELF_URL', 'https://lab-asset.onrender.com')
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='.')
 app.secret_key = "lab_asset_2026_final_secure"
+
+# DeepSeek AI 客户端
+deepseek_client = OpenAI(
+    api_key=os.environ.get("DEEPSEEK_API_KEY", "your-api-key-here"),
+    base_url="https://api.deepseek.com",
+)
+
+SYSTEM_PROMPT = """你是一个专业、友好的实验室资产管理助手。你的职责是：
+- 耐心解答用户关于实验室设备的问题。
+- 如果用户询问如何借用设备，请告知其前往 '资产记录' (record.html) 页面填写记录单。
+- 如果用户想查询资产，请引导其使用 '资产查询' (query.html) 页面提供的搜索功能。
+- 回复尽量简洁清晰，语气亲切。"""
+
 
 # 定时唤醒服务（Render防休眠，本地不启动）
 def wake_up_service():
@@ -40,28 +57,39 @@ def wake_up_service():
         except Exception as e:
             print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 唤醒异常：{str(e)}")
         time.sleep(WAKE_UP_INTERVAL)
+
+
 if os.environ.get('PORT'):
     threading.Thread(target=wake_up_service, daemon=True).start()
-    print(f"✅ 定时唤醒服务启动，间隔{WAKE_UP_INTERVAL/60}分钟，目标：{SELF_URL}")
+    print(f"✅ 定时唤醒服务启动，间隔{WAKE_UP_INTERVAL / 60}分钟，目标：{SELF_URL}")
+
 
 # 基础工具函数
 @app.route('/health')
 def health_check():
     return 'OK', 200
+
+
 def get_beijing_time():
     return datetime.utcnow() + timedelta(hours=8)
+
+
 def format_beijing_time(dt):
     return dt.strftime("%Y-%m-%d %H:%M:%S")
+
+
 def get_db():
     return pymysql.connect(**DB_CONFIG)
+
 
 # 登录校验
 @app.before_request
 def check_login():
-    if request.path in ["/login", "/health"]:
+    if request.path in ["/login", "/health", "/chat"]:
         return
     if not session.get("login"):
         return redirect("/login")
+
 
 # 登录/登出
 @app.route("/login", methods=["GET", "POST"])
@@ -74,10 +102,13 @@ def login():
             return redirect("/")
         flash("⚠️ 账号或密码错误")
     return render_template("login.html", system_name=SYSTEM_NAME)
+
+
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/login")
+
 
 # 资产列表（核心：采购时间无占位符）
 @app.route("/")
@@ -89,11 +120,13 @@ def index():
     db.close()
     return render_template("index.html", assets=assets, system_name=SYSTEM_NAME, categories=CATEGORIES, sources=SOURCES)
 
+
 # 新增资产（采购时间无占位符，未选则留空）
 @app.route("/add_asset", methods=["POST"])
 def add_asset():
     form_data = request.form
-    if not form_data.get("asset_id") or not form_data.get("name") or not form_data.get("category") or not form_data.get("source"):
+    if not form_data.get("asset_id") or not form_data.get("name") or not form_data.get("category") or not form_data.get(
+            "source"):
         flash("⚠️ 资产编号、名称、分类、来源为必填项！")
         return redirect("/")
     db = get_db()
@@ -124,6 +157,7 @@ def add_asset():
         db.close()
     return redirect("/")
 
+
 # 删除资产
 @app.route("/delete_asset", methods=["POST"])
 def delete_asset():
@@ -142,6 +176,7 @@ def delete_asset():
         db.close()
     return redirect("/")
 
+
 # ==============================
 # ✅ 核心修复：统一资产ID类型，彻底解决未知资产
 # ==============================
@@ -149,7 +184,7 @@ def delete_asset():
 def record():
     db = get_db()
     cur = db.cursor()
-    
+
     # 1. 加载资产，统一asset_id为字符串，解析型号
     cur.execute("SELECT asset_id, name, model FROM asset_info ORDER BY name")
     assets = cur.fetchall()
@@ -184,6 +219,7 @@ def record():
     db.close()
     # 传递asset_map给模板，直接匹配，100%成功
     return render_template("record.html", records=records, system_name=SYSTEM_NAME, assets=assets, asset_map=asset_map)
+
 
 # 提交出入记录（完全不动）
 @app.route("/do_record", methods=["POST"])
@@ -220,9 +256,13 @@ def do_record():
             expected_return = format_beijing_time(get_beijing_time() + timedelta(days=return_days))
             purpose_with_return = f"{purpose_origin}|预计归还：{expected_return}" if purpose_origin else f"预计归还：{expected_return}"
         else:
-            cur.execute("SELECT COALESCE(SUM(quantity),0) as total_borrowed FROM record_info WHERE asset_id=%s AND person=%s AND type='领用'", (asset_id, person))
+            cur.execute(
+                "SELECT COALESCE(SUM(quantity),0) as total_borrowed FROM record_info WHERE asset_id=%s AND person=%s AND type='领用'",
+                (asset_id, person))
             total_borrowed = cur.fetchone()["total_borrowed"]
-            cur.execute("SELECT COALESCE(SUM(quantity),0) as total_returned FROM record_info WHERE asset_id=%s AND person=%s AND type='归还'", (asset_id, person))
+            cur.execute(
+                "SELECT COALESCE(SUM(quantity),0) as total_returned FROM record_info WHERE asset_id=%s AND person=%s AND type='归还'",
+                (asset_id, person))
             total_returned = cur.fetchone()["total_returned"]
             if (total_borrowed - total_returned) < quantity:
                 flash(f"⚠️ 仅可归还 {total_borrowed - total_returned} 件，无法超还！")
@@ -233,7 +273,8 @@ def do_record():
                 return redirect("/record")
             purpose_with_return = f"设备状态：{device_status}"
         new_status = "借出" if new_qty == 0 else "在库"
-        cur.execute("UPDATE asset_info SET current_quantity=%s, status=%s WHERE asset_id=%s", (new_qty, new_status, asset_id))
+        cur.execute("UPDATE asset_info SET current_quantity=%s, status=%s WHERE asset_id=%s",
+                    (new_qty, new_status, asset_id))
         cur.execute("""
             INSERT INTO record_info (asset_id, person, type, quantity, time, purpose, handler)
             VALUES (%s, %s, %s, %s, %s, %s, '')
@@ -246,6 +287,7 @@ def do_record():
     finally:
         db.close()
     return redirect("/record")
+
 
 # 删除出入记录（完全不动）
 @app.route("/delete_record", methods=["POST"])
@@ -271,7 +313,8 @@ def delete_record():
             flash("⚠️ 删除后库存为负，无法操作！")
             return redirect("/record")
         new_status = "借出" if new_qty == 0 else "在库"
-        cur.execute("UPDATE asset_info SET current_quantity=%s, status=%s WHERE asset_id=%s", (new_qty, new_status, asset_id))
+        cur.execute("UPDATE asset_info SET current_quantity=%s, status=%s WHERE asset_id=%s",
+                    (new_qty, new_status, asset_id))
         cur.execute("DELETE FROM record_info WHERE id=%s", (record_id,))
         db.commit()
         flash("✅ 记录删除成功，库存已恢复！")
@@ -282,10 +325,12 @@ def delete_record():
         db.close()
     return redirect("/record")
 
+
 # 查询页（完全不动）
 @app.route("/query")
 def query():
     return render_template("query.html", system_name=SYSTEM_NAME, categories=CATEGORIES)
+
 
 # 查询API（完全不动）
 @app.route("/api/asset", methods=["POST"])
@@ -360,12 +405,36 @@ def api_asset():
     db.close()
     return jsonify(ok=True, data=result)
 
+
+# AI 对话接口（流式响应）
+@app.route("/chat", methods=["POST"])
+def chat():
+    req_data = request.json
+    user_messages = req_data.get("messages", [])
+
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}] + user_messages
+
+    stream = deepseek_client.chat.completions.create(
+        model="deepseek-chat",
+        messages=messages,
+        stream=True,
+    )
+
+    def generate():
+        for chunk in stream:
+            if chunk.choices[0].delta.content:
+                yield chunk.choices[0].delta.content
+
+    return Response(generate(), mimetype="text/plain")
+
+
 # ==============================
 # 新增功能：Excel 导入 / 导出（只新增，不修改任何代码）
 # ==============================
 import pandas as pd
 from flask import send_file
 import io
+
 
 # 一键导入资产 Excel
 @app.route("/import_assets", methods=["POST"])
@@ -409,6 +478,7 @@ def import_assets():
         flash("❌ 导入失败，请检查Excel格式")
     return redirect("/")
 
+
 # 一键导出资产 + 出入记录
 @app.route("/export_all")
 def export_all():
@@ -441,6 +511,7 @@ def export_all():
         print("导出错误：", e)
         flash("❌ 导出失败")
         return redirect("/query")
+
 
 # 启动服务
 if __name__ == "__main__":
